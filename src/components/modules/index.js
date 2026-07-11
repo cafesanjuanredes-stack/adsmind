@@ -1,0 +1,6 @@
+export { ModResumen }     from './ModResumen'
+export { ModHistorico }   from './ModHistorico'
+export { ModPlataformas } from './ModPlataformas'
+export { ModContenido }   from './ModContenido'
+export { ModBenchmark }   from './ModBenchmark'
+export { ModIA }          from './ModIA'
