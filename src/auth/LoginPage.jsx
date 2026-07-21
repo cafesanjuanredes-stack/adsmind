@@ -24,7 +24,7 @@ export function LoginPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontFamily: "'Space Grotesk', system-ui, sans-serif",
+      fontFamily: "'Inter', system-ui, sans-serif",
       padding: 20,
     }}>
       {/* Background grid */}
@@ -110,7 +110,7 @@ export function LoginPage() {
                     background: T.surf, border: `1px solid ${error ? T.red + '60' : T.border2}`,
                     borderRadius: 8, padding: '10px 40px 10px 13px',
                     fontSize: 13, color: T.text, outline: 'none',
-                    fontFamily: "'JetBrains Mono', monospace", transition: 'border-color .15s',
+                    fontFamily: "'IBM Plex Mono', monospace", transition: 'border-color .15s',
                   }}
                   onFocus={e => e.target.style.borderColor = T.primary}
                   onBlur={e  => e.target.style.borderColor = error ? T.red + '60' : T.border2}

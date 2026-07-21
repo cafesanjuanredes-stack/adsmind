@@ -3,6 +3,7 @@ import { Card, SLabel, Btn, Input, Sel } from '../ui'
 import { T } from '../../tokens'
 import { listAssets, listPiezas, createPieza, deleteAsset, deletePieza } from '../../lib/piezas'
 import { uploadOriginal, uploadPieza, getSignedUrl } from '../../lib/storage'
+import { listSuggestions, useSuggestion, discardSuggestion } from '../../lib/aiSuggestions'
 
 const DIMENSIONS = {
   historia: { w: 1080, h: 1920, dispW: 162, dispH: 288 },
@@ -29,8 +30,10 @@ function wrapText(ctx, text, maxWidth) {
 export function ModGenerador({ client, notify }) {
   const [assets, setAssets]     = useState([])
   const [piezas, setPiezas]     = useState([])
+  const [suggestions, setSuggestions] = useState([])
   const [thumbs, setThumbs]     = useState({})
   const [piezaThumbs, setPiezaThumbs] = useState({})
+  const [suggThumbs, setSuggThumbs] = useState({})
   const [loadingLists, setLoadingLists] = useState(true)
 
   const [uploadKind, setUploadKind] = useState('foto')
@@ -58,6 +61,11 @@ export function ModGenerador({ client, notify }) {
       .then(([a, p]) => { if (!cancelled) { setAssets(a); setPiezas(p) } })
       .catch(err => notify('Error cargando: ' + err.message))
       .finally(() => { if (!cancelled) setLoadingLists(false) })
+    // Sugerencias IA por separado: si la tabla todavía no existe (falta correr
+    // la migración 0006) no debe romper la carga del banco de fotos/piezas.
+    listSuggestions(client.id)
+      .then(s => { if (!cancelled) setSuggestions(s) })
+      .catch(() => { if (!cancelled) setSuggestions([]) })
     return () => { cancelled = true }
   }, [client.id])
 
@@ -76,6 +84,14 @@ export function ModGenerador({ client, notify }) {
       .then(entries => { if (!cancelled) setPiezaThumbs(Object.fromEntries(entries)) })
     return () => { cancelled = true }
   }, [piezas])
+
+  // ── thumbnails de sugerencias IA ─────────────────────────────────
+  useEffect(() => {
+    let cancelled = false
+    Promise.all(suggestions.map(s => getSignedUrl(s.storage_path, 900).then(url => [s.id, url]).catch(() => [s.id, null])))
+      .then(entries => { if (!cancelled) setSuggThumbs(Object.fromEntries(entries)) })
+    return () => { cancelled = true }
+  }, [suggestions])
 
   // ── cargar imagen seleccionada en un <Image> para el canvas ──────
   useEffect(() => {
@@ -118,7 +134,7 @@ export function ModGenerador({ client, notify }) {
 
     const text = overlayText.trim()
     if (text) {
-      ctx.font = `700 ${fontSize}px 'Space Grotesk', system-ui, sans-serif`
+      ctx.font = `700 ${fontSize}px 'Inter', system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       const maxWidth = w * 0.86
@@ -206,11 +222,50 @@ export function ModGenerador({ client, notify }) {
     }
   }
 
+  const handleUseSuggestion = async (s) => {
+    try {
+      const asset = await useSuggestion(s)
+      setAssets(prev => [asset, ...prev])
+      setSuggestions(prev => prev.filter(x => x.id !== s.id))
+      notify('Sugerencia agregada al banco de fotos/diseños')
+    } catch (err) {
+      notify('Error: ' + err.message)
+    }
+  }
+
+  const handleDiscardSuggestion = async (s) => {
+    try {
+      await discardSuggestion(s)
+      setSuggestions(prev => prev.filter(x => x.id !== s.id))
+    } catch (err) {
+      notify('Error borrando: ' + err.message)
+    }
+  }
+
   const dims = DIMENSIONS[tipo]
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <SLabel accent={client.color}>Generador de historias y posteos</SLabel>
+
+      {suggestions.length > 0 && (
+        <Card accent={T.primary}>
+          <SLabel accent={T.primary}>✦ Sugerencias IA — puntos de partida, cada 3 días</SLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
+            {suggestions.map(s => (
+              <div key={s.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ aspectRatio: '1', borderRadius: 6, overflow: 'hidden', background: T.surf2, border: `1px solid ${T.border2}` }}>
+                  {suggThumbs[s.id] && <img src={suggThumbs[s.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <Btn size="sm" variant="success" style={{ flex: 1 }} onClick={() => handleUseSuggestion(s)}>Usar</Btn>
+                  <Btn size="sm" variant="danger" onClick={() => handleDiscardSuggestion(s)}>✕</Btn>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 280px', gap: 16, alignItems: 'start' }}>
 

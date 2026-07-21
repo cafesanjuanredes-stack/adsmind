@@ -9,7 +9,7 @@ export function BarH({ label, value, max, color, formatted }) {
     <div style={{ marginBottom: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
         <span style={{ fontSize: 11, color: T.sub }}>{label}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "'JetBrains Mono',monospace" }}>{display}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "'IBM Plex Mono',monospace" }}>{display}</span>
       </div>
       <div style={{ height: 5, background: T.surf2, borderRadius: 3 }}>
         <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 3, transition: 'width .6s ease' }} />

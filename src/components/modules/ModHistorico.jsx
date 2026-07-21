@@ -108,15 +108,15 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {history.map((h, i) => (
             <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, fontFamily: "'JetBrains Mono',monospace", minWidth: 70 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, fontFamily: "'IBM Plex Mono',monospace", minWidth: 70 }}>
                 {fmtDate(h.date)}
               </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: T.text, fontFamily: "'JetBrains Mono',monospace", minWidth: 65 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: T.text, fontFamily: "'IBM Plex Mono',monospace", minWidth: 65 }}>
                 {fmtNum(h.followers_ig)}
               </div>
               <div style={{ fontSize: 11, color: T.dim, flex: 1 }}>{h.milestone || '—'}</div>
               {i > 0 && (
-                <div style={{ fontSize: 11, color: T.green, fontFamily: "'JetBrains Mono',monospace", whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 11, color: T.green, fontFamily: "'IBM Plex Mono',monospace", whiteSpace: 'nowrap' }}>
                   +{fmtNum(h.followers_ig - history[i - 1].followers_ig)}
                 </div>
               )}

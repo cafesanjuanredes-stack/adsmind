@@ -14,7 +14,7 @@ const BASE = {
 }
 
 export function Input({ value, onChange, placeholder, mono, multiline, rows = 3, style: extra }) {
-  const style = { ...BASE, fontFamily: mono ? "'JetBrains Mono',monospace" : 'inherit', ...extra }
+  const style = { ...BASE, fontFamily: mono ? "'IBM Plex Mono',monospace" : 'inherit', ...extra }
   return multiline
     ? <textarea value={value} onChange={onChange} placeholder={placeholder} rows={rows} style={{ ...style, color: T.sub }} />
     : <input    value={value} onChange={onChange} placeholder={placeholder} style={style} />

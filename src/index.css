@@ -7,7 +7,7 @@ html { font-size: 16px; -webkit-font-smoothing: antialiased; }
 body {
   background: #F5F1EA;
   color: #171310;
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
 }
 

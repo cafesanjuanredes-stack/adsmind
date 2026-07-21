@@ -48,7 +48,7 @@ export function LineChart({ data, color = T.primary, height = 160 }) {
             <g key={t}>
               <line x1={pad.l} x2={w - pad.r} y1={y} y2={y} stroke={T.border} strokeWidth="1" />
               <text x={pad.l - 6} y={y + 4} textAnchor="end" fill={T.dim} fontSize="9"
-                fontFamily="'JetBrains Mono',monospace">
+                fontFamily="'IBM Plex Mono',monospace">
                 {fmtNum(v)}
               </text>
             </g>
@@ -71,13 +71,13 @@ export function LineChart({ data, color = T.primary, height = 160 }) {
                 <line x1={px(i)} x2={px(i)} y1={py(d.followers_ig) - 8} y2={pad.t}
                   stroke={color} strokeWidth="1" strokeDasharray="3,3" opacity=".5" />
                 <text x={px(i)} y={pad.t - 4} textAnchor="middle" fill={color} fontSize="8"
-                  fontFamily="'Space Grotesk',sans-serif">
+                  fontFamily="'Inter',sans-serif">
                   {d.milestone.split(' ').slice(0, 3).join(' ')}
                 </text>
               </>
             )}
             <text x={px(i)} y={height - 4} textAnchor="middle" fill={T.dim} fontSize="8"
-              fontFamily="'Space Grotesk',sans-serif">
+              fontFamily="'Inter',sans-serif">
               {fmtDate(d.date)}
             </text>
           </g>

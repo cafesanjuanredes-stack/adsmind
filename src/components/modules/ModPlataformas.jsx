@@ -291,12 +291,12 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
                       <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{fmtDate(v.date)} · {v.type}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: meta.color, fontFamily: "'JetBrains Mono',monospace" }}>{fmtNum(v.views)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: meta.color, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtNum(v.views)}</div>
                       <div style={{ fontSize: 9, color: T.dim }}>views</div>
                     </div>
                     {v.likes > 0 && (
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: T.pink, fontFamily: "'JetBrains Mono',monospace" }}>{fmtNum(v.likes)}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: T.pink, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtNum(v.likes)}</div>
                         <div style={{ fontSize: 9, color: T.dim }}>likes</div>
                       </div>
                     )}

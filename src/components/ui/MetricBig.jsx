@@ -20,7 +20,7 @@ export function MetricBig({ label, value, sub, color = T.primary, sparkValues })
       <div style={{ fontSize: 9, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: T.text, fontFamily: "'JetBrains Mono',monospace", lineHeight: 1 }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: T.text, fontFamily: "'IBM Plex Mono',monospace", lineHeight: 1 }}>
         {value}
       </div>
       {sub && <div style={{ fontSize: 10, color, marginTop: 4 }}>{sub}</div>}

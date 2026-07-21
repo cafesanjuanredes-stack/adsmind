@@ -84,8 +84,8 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
               {/* Client row */}
               <tr style={{ background: client.color + '10' }}>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: client.color }}>★ {client.name}</td>
-                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: T.sub }}>—</td>
-                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'JetBrains Mono',monospace", fontWeight: 800, color: client.color }}>{fmtNum(ig.followers)}</td>
+                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: T.sub }}>—</td>
+                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 800, color: client.color }}>{fmtNum(ig.followers)}</td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }}><Tag color={client.color}>CLIENTE</Tag></td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.dim }}>Engagement {ig.engagement_pct}%</td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }} />
@@ -93,8 +93,8 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
               {comps.map((c, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? T.surf + '40' : 'transparent' }}>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.text }}>{c.name}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: T.sub }}>{c.handle || '—'}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: T.text }}>{fmtNum(c.followers_ig)}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: T.sub }}>{c.handle || '—'}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, color: T.text }}>{fmtNum(c.followers_ig)}</td>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }}><Tag color={T.dim}>{c.type}</Tag></td>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.dim, fontSize: 11 }}>{c.notes || '—'}</td>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }}>
