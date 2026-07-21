@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { T, PLATFORM_META } from './tokens'
 import { useAuth } from './auth/AuthContext'
 import { useClients } from './hooks/useClients'
@@ -13,6 +13,7 @@ import {
   ModContenido,
   ModBenchmark,
   ModIA,
+  ModGenerador,
 } from './components/modules'
 
 const MODULES = [
@@ -22,6 +23,7 @@ const MODULES = [
   { id: 'contenido',   label: 'Contenido' },
   { id: 'benchmark',   label: 'Benchmark' },
   { id: 'ia',          label: '✦ IA Análisis' },
+  { id: 'generador',   label: '◆ Generador' },
 ]
 
 function clientStatus(client) {
@@ -32,31 +34,42 @@ function clientStatus(client) {
 export default function App() {
   const { logout } = useAuth()
   const {
-    clients, addClient, removeClient,
+    clients, loading, loadError, addClient, removeClient,
     addHistoryPoint, addViral, removeViral,
     addCompetitor, removeCompetitor,
   } = useClients()
 
-  const [activeId,  setActiveId]  = useState(clients[0]?.id)
+  const [activeId,  setActiveId]  = useState(null)
   const [activeMod, setActiveMod] = useState('resumen')
   const [toast,     setToast]     = useState(null)
   const [showAdd,   setShowAdd]   = useState(false)
 
   const notify = useCallback((msg) => setToast(msg), [])
 
-  const client = clients.find(c => c.id === activeId) || clients[0]
+  // Selecciona el primer cliente ni bien cargan (o si el activo fue borrado)
+  useEffect(() => {
+    if (clients.length && !clients.find(c => c.id === activeId)) {
+      setActiveId(clients[0].id)
+    }
+  }, [clients, activeId])
 
-  const handleAddClient = (name, industry, avatar) => {
-    const id = addClient(name, industry, avatar)
-    setActiveId(id)
-    setActiveMod('resumen')
-    notify(`Cliente "${name}" creado`)
+  const client = clients.find(c => c.id === activeId)
+
+  const handleAddClient = async (name, industry, avatar) => {
+    const id = await addClient(name, industry, avatar)
+    if (id) {
+      setActiveId(id)
+      setActiveMod('resumen')
+      notify(`Cliente "${name}" creado`)
+    } else {
+      notify('No se pudo crear el cliente')
+    }
   }
 
-  const handleRemoveClient = (id) => {
+  const handleRemoveClient = async (id) => {
     if (clients.length <= 1) return
     const next = clients.find(c => c.id !== id)
-    removeClient(id)
+    await removeClient(id)
     setActiveId(next?.id)
     notify('Cliente eliminado')
   }
@@ -71,8 +84,25 @@ export default function App() {
       case 'contenido':   return <ModContenido   {...shared} addViral={addViral} removeViral={removeViral} />
       case 'benchmark':   return <ModBenchmark   {...shared} addCompetitor={addCompetitor} removeCompetitor={removeCompetitor} />
       case 'ia':          return <ModIA          {...shared} />
+      case 'generador':   return <ModGenerador   {...shared} />
       default:            return <ModResumen     {...shared} />
     }
+  }
+
+  if (loading && !clients.length) {
+    return (
+      <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.dim, fontSize: 13 }}>
+        Cargando clientes…
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.red, fontSize: 13, padding: 20, textAlign: 'center' }}>
+        Error cargando clientes desde Supabase: {loadError}
+      </div>
+    )
   }
 
   return (
