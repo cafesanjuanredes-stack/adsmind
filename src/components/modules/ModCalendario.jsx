@@ -4,7 +4,7 @@ import { T } from '../../tokens'
 import { listPiezas, updatePiezaEstado } from '../../lib/piezas'
 import { getSignedUrl } from '../../lib/storage'
 import { listVideos, createVideo, updateVideo, deleteVideo } from '../../lib/videosExternos'
-import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play, AlertTriangle, Check } from 'lucide-react'
 
 const DIA_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const TIPO_META = {
@@ -37,9 +37,10 @@ export function ModCalendario({ client, notify }) {
   const [thumbs, setThumbs] = useState({})
   const [loading, setLoading] = useState(true)
 
-  const [newVideo, setNewVideo] = useState({ titulo: '', videoUrl: '', scheduledFor: '' })
+  const [newVideo, setNewVideo] = useState({ titulo: '', videoUrl: '', scheduledFor: '', scheduledTime: '10:00' })
   const [savingVideo, setSavingVideo] = useState(false)
   const [scheduleDates, setScheduleDates] = useState({}) // { [piezaId]: 'YYYY-MM-DD' }
+  const [scheduleTimes, setScheduleTimes] = useState({}) // { [piezaId]: 'HH:MM' }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -84,9 +85,10 @@ export function ModCalendario({ client, notify }) {
   const handleProgramarPieza = async (pieza) => {
     const dateStr = scheduleDates[pieza.id]
     if (!dateStr) { notify('Elegí una fecha primero'); return }
+    const timeStr = scheduleTimes[pieza.id] || '10:00'
     try {
-      await updatePiezaEstado(pieza.id, 'programada', { scheduled_for: new Date(`${dateStr}T10:00:00`).toISOString() })
-      notify(`${pieza.tipo === 'historia' ? 'Historia' : 'Post'} programado`)
+      await updatePiezaEstado(pieza.id, 'programada', { scheduled_for: new Date(`${dateStr}T${timeStr}:00`).toISOString() })
+      notify(`${pieza.tipo === 'historia' ? 'Historia' : 'Post'} programado para las ${timeStr}`)
       load()
     } catch (err) {
       notify('Error programando: ' + err.message)
@@ -111,9 +113,9 @@ export function ModCalendario({ client, notify }) {
         clientId: client.id,
         titulo: newVideo.titulo,
         videoUrl: newVideo.videoUrl,
-        scheduledFor: newVideo.scheduledFor ? new Date(`${newVideo.scheduledFor}T10:00:00`).toISOString() : null,
+        scheduledFor: newVideo.scheduledFor ? new Date(`${newVideo.scheduledFor}T${newVideo.scheduledTime || '10:00'}:00`).toISOString() : null,
       })
-      setNewVideo({ titulo: '', videoUrl: '', scheduledFor: '' })
+      setNewVideo({ titulo: '', videoUrl: '', scheduledFor: '', scheduledTime: '10:00' })
       notify('Video externo agregado')
       load()
     } catch (err) {
@@ -184,20 +186,25 @@ export function ModCalendario({ client, notify }) {
                     {items.slice(0, 3).map((item, i) => {
                       const tipo = item.kind === 'video' ? 'video' : item.data.tipo
                       const meta = TIPO_META[tipo]
+                      const isError = item.kind === 'pieza' && item.data.estado === 'error'
+                      const isPublished = item.data.estado === 'publicada' || item.data.estado === 'publicado'
                       const label = item.kind === 'video' ? item.data.titulo : (item.data.overlay_text || meta.label)
+                      const title = isError ? `${label} — ERROR: ${item.data.error_detail || 'no se pudo publicar'}` : label
+                      const color = isError ? T.red : meta.color
                       return (
                         <div
                           key={i}
-                          title={label}
+                          title={title}
                           onClick={() => item.kind === 'pieza' ? handleVolverABanco(item.data) : handleToggleVideoPublicado(item.data)}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 3,
                             fontSize: 9, padding: '2px 4px', borderRadius: 3, cursor: 'pointer',
-                            background: meta.color + '20', color: meta.color,
+                            background: color + '20', color,
+                            border: isError ? `1px solid ${T.red}60` : 'none',
                             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                           }}
                         >
-                          <meta.icon size={9} style={{ flexShrink: 0 }} /> {label}
+                          {isError ? <AlertTriangle size={9} style={{ flexShrink: 0 }} /> : isPublished ? <Check size={9} style={{ flexShrink: 0 }} /> : <meta.icon size={9} style={{ flexShrink: 0 }} />} {label}
                         </div>
                       )
                     })}
@@ -211,6 +218,7 @@ export function ModCalendario({ client, notify }) {
           </div>
           <div style={{ marginTop: 10, fontSize: 10, color: T.dim }}>
             Click en una pieza programada = vuelve al banco. Click en un video = marca publicado/programado.
+            {' '}<span style={{ color: T.red }}>Con borde rojo</span> = falló al publicar (pasá el mouse para ver el motivo).
           </div>
         </Card>
 
@@ -231,7 +239,13 @@ export function ModCalendario({ client, notify }) {
                       type="date"
                       value={scheduleDates[p.id] || ''}
                       onChange={e => setScheduleDates(s => ({ ...s, [p.id]: e.target.value }))}
-                      style={{ flex: 1, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 4px' }}
+                      style={{ flex: 1, minWidth: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 4px' }}
+                    />
+                    <input
+                      type="time"
+                      value={scheduleTimes[p.id] || '10:00'}
+                      onChange={e => setScheduleTimes(s => ({ ...s, [p.id]: e.target.value }))}
+                      style={{ width: 62, flexShrink: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 2px' }}
                     />
                     <Btn size="sm" onClick={() => handleProgramarPieza(p)}>OK</Btn>
                   </div>
@@ -248,12 +262,20 @@ export function ModCalendario({ client, notify }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Input value={newVideo.titulo} onChange={e => setNewVideo(v => ({ ...v, titulo: e.target.value }))} placeholder="Título del video" />
               <Input value={newVideo.videoUrl} onChange={e => setNewVideo(v => ({ ...v, videoUrl: e.target.value }))} placeholder="Link o path del archivo" mono />
-              <input
-                type="date"
-                value={newVideo.scheduledFor}
-                onChange={e => setNewVideo(v => ({ ...v, scheduledFor: e.target.value }))}
-                style={{ fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 7, color: T.text, padding: '8px 12px' }}
-              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="date"
+                  value={newVideo.scheduledFor}
+                  onChange={e => setNewVideo(v => ({ ...v, scheduledFor: e.target.value }))}
+                  style={{ flex: 1, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 7, color: T.text, padding: '8px 12px' }}
+                />
+                <input
+                  type="time"
+                  value={newVideo.scheduledTime}
+                  onChange={e => setNewVideo(v => ({ ...v, scheduledTime: e.target.value }))}
+                  style={{ width: 90, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 7, color: T.text, padding: '8px 8px' }}
+                />
+              </div>
               <Btn onClick={handleCreateVideo} disabled={!newVideo.titulo || !newVideo.videoUrl || savingVideo}>
                 {savingVideo ? 'Guardando…' : 'Agregar al calendario'}
               </Btn>
