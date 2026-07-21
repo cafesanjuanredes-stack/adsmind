@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { T, PLATFORM_META } from './tokens'
+import { useAuth } from './auth/AuthContext'
 import { useClients } from './hooks/useClients'
 import { Toast } from './components/ui/Toast'
 import { Tag }   from './components/ui/Tag'
@@ -29,6 +30,7 @@ function clientStatus(client) {
 }
 
 export default function App() {
+  const { logout } = useAuth()
   const {
     clients, addClient, removeClient,
     addHistoryPoint, addViral, removeViral,
@@ -91,7 +93,7 @@ export default function App() {
           </div>
 
           {/* Client tabs */}
-          <div style={{ display: 'flex', flex: 1, overflowX: 'auto', height: '100%' }}>
+          <div style={{ display: 'flex', flex: 1, overflowX: 'auto', height: '100%', minWidth: 0 }}>
             {clients.map(c => {
               const isActive = c.id === activeId
               return (
@@ -156,6 +158,24 @@ export default function App() {
               + Cliente
             </button>
           </div>
+
+          {/* Logout */}
+          <button
+            onClick={logout}
+            title="Cerrar sesión"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '0 16px', height: '100%', flexShrink: 0,
+              border: 'none', borderLeft: `1px solid ${T.border}`,
+              background: 'transparent', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: 11, color: T.dim,
+              transition: 'color .15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = T.red}
+            onMouseLeave={e => e.currentTarget.style.color = T.dim}
+          >
+            <span>⎋</span> Salir
+          </button>
         </div>
 
         {/* Module nav */}
