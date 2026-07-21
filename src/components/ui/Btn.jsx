@@ -1,7 +1,7 @@
 import { T } from '../../tokens'
 
 const VARIANTS = {
-  primary: { background: `linear-gradient(135deg,${T.blue},${T.violet})`, color: '#fff', border: 'none' },
+  primary: { background: `linear-gradient(135deg,${T.primary},${T.violet})`, color: '#fff', border: 'none' },
   ghost:   { background: 'transparent', color: T.sub,   border: `1px solid ${T.border2}` },
   success: { background: T.green + '20', color: T.green, border: `1px solid ${T.green}40` },
   danger:  { background: T.red   + '20', color: T.red,   border: `1px solid ${T.red}40`   },

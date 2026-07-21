@@ -116,7 +116,7 @@ export default function App() {
           {/* Logo */}
           <div style={{ padding: '0 20px', borderRight: `1px solid ${T.border}`, height: '100%', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.02em', color: T.text }}>
-              Ad<span style={{ color: T.blue }}>Mind</span>
+              Ad<span style={{ color: T.primary }}>Mind</span>
             </span>
             <span style={{ fontSize: 8, color: T.dim, letterSpacing: '0.12em', marginLeft: 6, fontWeight: 500 }}>
               ANALYTICS
@@ -219,12 +219,12 @@ export default function App() {
                 style={{
                   padding: '0 14px', height: 38,
                   border: 'none',
-                  borderBottom: `2px solid ${activeMod === m.id ? T.blue : 'transparent'}`,
+                  borderBottom: `2px solid ${activeMod === m.id ? T.primary : 'transparent'}`,
                   background: 'transparent',
                   cursor: 'pointer', fontFamily: 'inherit',
                   fontWeight: activeMod === m.id ? 600 : 400,
                   fontSize: 11,
-                  color: activeMod === m.id ? T.blue : T.dim,
+                  color: activeMod === m.id ? T.primary : T.dim,
                   transition: 'color .15s, border-color .15s',
                   whiteSpace: 'nowrap',
                 }}

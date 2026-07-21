@@ -39,7 +39,7 @@ export function LoginPage() {
       <div style={{
         position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)',
         width: 600, height: 300, borderRadius: '50%',
-        background: `radial-gradient(ellipse, ${T.blue}18 0%, transparent 70%)`,
+        background: `radial-gradient(ellipse, ${T.primary}18 0%, transparent 70%)`,
         pointerEvents: 'none',
       }} />
 
@@ -48,7 +48,7 @@ export function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <div style={{ fontSize: 30, fontWeight: 900, letterSpacing: '-0.03em', color: T.text, marginBottom: 6 }}>
-            Ad<span style={{ color: T.blue }}>Mind</span>
+            Ad<span style={{ color: T.primary }}>Mind</span>
           </div>
           <div style={{ fontSize: 10, color: T.dim, letterSpacing: '0.15em', fontWeight: 500 }}>
             ANALYTICS PLATFORM
@@ -61,7 +61,7 @@ export function LoginPage() {
           border: `1px solid ${T.border}`,
           borderRadius: 14,
           padding: '28px 28px 24px',
-          boxShadow: `0 24px 60px rgba(0,0,0,.4)`,
+          boxShadow: `0 16px 40px rgba(23,19,16,.08)`,
         }}>
           <div style={{ marginBottom: 22 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: T.text, marginBottom: 4 }}>Iniciar sesión</div>
@@ -88,7 +88,7 @@ export function LoginPage() {
                   fontSize: 13, color: T.text, outline: 'none',
                   fontFamily: 'inherit', transition: 'border-color .15s',
                 }}
-                onFocus={e => e.target.style.borderColor = T.blue}
+                onFocus={e => e.target.style.borderColor = T.primary}
                 onBlur={e  => e.target.style.borderColor = error ? T.red + '60' : T.border2}
               />
             </div>
@@ -112,7 +112,7 @@ export function LoginPage() {
                     fontSize: 13, color: T.text, outline: 'none',
                     fontFamily: "'JetBrains Mono', monospace", transition: 'border-color .15s',
                   }}
-                  onFocus={e => e.target.style.borderColor = T.blue}
+                  onFocus={e => e.target.style.borderColor = T.primary}
                   onBlur={e  => e.target.style.borderColor = error ? T.red + '60' : T.border2}
                 />
                 <button
@@ -149,7 +149,7 @@ export function LoginPage() {
                 marginTop: 4,
                 background: loading
                   ? T.surf2
-                  : `linear-gradient(135deg, ${T.blue}, ${T.violet})`,
+                  : `linear-gradient(135deg, ${T.primary}, ${T.violet})`,
                 border: 'none', borderRadius: 8,
                 padding: '11px', fontSize: 13, fontWeight: 700,
                 color: loading ? T.dim : '#fff',

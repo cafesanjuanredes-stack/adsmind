@@ -14,7 +14,7 @@ function MiniSpark({ data, color, h = 28 }) {
   )
 }
 
-export function MetricBig({ label, value, sub, color = T.blue, sparkValues }) {
+export function MetricBig({ label, value, sub, color = T.primary, sparkValues }) {
   return (
     <div style={{ background: T.surf, borderRadius: 8, padding: '12px 14px' }}>
       <div style={{ fontSize: 9, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>

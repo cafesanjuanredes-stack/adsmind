@@ -2,15 +2,15 @@
 // Single source of truth for all colors, typography, spacing
 
 export const T = {
-  // Backgrounds
-  bg:      '#060810',
-  card:    '#0E1420',
-  surf:    '#131D2E',
-  surf2:   '#192438',
+  // Backgrounds — tema claro
+  bg:      '#F5F1EA',
+  card:    '#FFFFFF',
+  surf:    '#F7F4EE',
+  surf2:   '#EFEAE1',
 
   // Borders
-  border:  '#1C2B42',
-  border2: '#243550',
+  border:  '#E2DCD0',
+  border2: '#D4CCBC',
 
   // Platform brand colors
   ig:   '#E1306C',
@@ -27,19 +27,20 @@ export const T = {
   dead:   '#EF4444',
 
   // Text
-  text: '#EDF2F7',
-  sub:  '#94A3B8',
-  dim:  '#4B5E78',
+  text: '#171310',
+  sub:  '#6B6459',
+  dim:  '#A69C8C',
 
   // Accents
+  primary: '#E23F79',
   blue:   '#3B82F6',
   violet: '#8B5CF6',
-  green:  '#10B981',
-  orange: '#F59E0B',
+  green:  '#178A45',
+  orange: '#C4601F',
   pink:   '#EC4899',
-  cyan:   '#06B6D4',
-  red:    '#EF4444',
-  yellow: '#EAB308',
+  cyan:   '#0B93A8',
+  red:    '#B4232F',
+  yellow: '#B8860B',
 }
 
 export const PLATFORM_META = {
@@ -56,7 +57,7 @@ export function getPlatformMeta(key) {
 }
 
 export const CLIENT_COLORS = [
-  T.orange, T.cyan, T.pink, T.green, T.violet, T.blue, T.yellow,
+  T.orange, T.cyan, T.pink, T.green, T.violet, T.primary, T.yellow,
 ]
 
 export const PLATFORM_KEYS = ['instagram', 'tiktok', 'facebook', 'youtube']

@@ -86,7 +86,7 @@ export function ModResumen({ client, notify }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {[
             ['Positivo 😊', client.sentiment.positive, T.green],
-            ['Neutral 😐',  client.sentiment.neutral,  T.blue],
+            ['Neutral 😐',  client.sentiment.neutral,  T.primary],
             ['Negativo 😞', client.sentiment.negative, T.red],
           ].map(([l, v, c]) => (
             <div key={l}>

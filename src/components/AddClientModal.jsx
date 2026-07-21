@@ -14,8 +14,8 @@ export function AddClientModal({ onAdd, onClose }) {
 
   return (
     <Modal onClose={onClose}>
-      <Card style={{ width: 420, maxWidth: '90vw' }} accent={T.blue}>
-        <SLabel accent={T.blue}>Nuevo cliente</SLabel>
+      <Card style={{ width: 420, maxWidth: '90vw' }} accent={T.primary}>
+        <SLabel accent={T.primary}>Nuevo cliente</SLabel>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Nombre del cliente *</div>

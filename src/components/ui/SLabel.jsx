@@ -1,6 +1,6 @@
 import { T } from '../../tokens'
 
-export function SLabel({ children, accent = T.blue, sub }) {
+export function SLabel({ children, accent = T.primary, sub }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

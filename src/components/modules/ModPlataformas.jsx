@@ -166,8 +166,8 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
 
       {/* Add platform form */}
       {showAdd && (
-        <Card accent={T.blue}>
-          <SLabel accent={T.blue}>Agregar red social</SLabel>
+        <Card accent={T.primary}>
+          <SLabel accent={T.primary}>Agregar red social</SLabel>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Plataforma *</div>

@@ -237,7 +237,7 @@ export function ModGenerador({ client, notify }) {
                   style={{
                     aspectRatio: '1', borderRadius: 6, overflow: 'hidden', cursor: 'pointer',
                     background: T.surf2,
-                    border: selectedAsset?.id === a.id ? `2px solid ${T.blue}` : `1px solid ${T.border2}`,
+                    border: selectedAsset?.id === a.id ? `2px solid ${T.primary}` : `1px solid ${T.border2}`,
                   }}
                 >
                   {thumbs[a.id] && <img src={thumbs[a.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}

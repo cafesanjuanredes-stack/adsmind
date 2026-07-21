@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { T } from '../../tokens'
 import { fmtNum, fmtDate } from '../../utils/format'
 
-export function LineChart({ data, color = T.blue, height = 160 }) {
+export function LineChart({ data, color = T.primary, height = 160 }) {
   const ref = useRef(null)
   const [w, setW] = useState(500)
 

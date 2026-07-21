@@ -55,8 +55,8 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
 
       {/* Add point form */}
       {showAdd && (
-        <Card accent={T.blue}>
-          <SLabel accent={T.blue}>Nuevo punto histórico</SLabel>
+        <Card accent={T.primary}>
+          <SLabel accent={T.primary}>Nuevo punto histórico</SLabel>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 10, marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Fecha (AAAA-MM) *</div>

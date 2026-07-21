@@ -1,6 +1,6 @@
 import { T } from '../../tokens'
 
-export function Tag({ children, color = T.blue }) {
+export function Tag({ children, color = T.primary }) {
   return (
     <span style={{
       background: color + '20',

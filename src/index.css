@@ -5,8 +5,8 @@
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }
 
 body {
-  background: #060810;
-  color: #EDF2F7;
+  background: #F5F1EA;
+  color: #171310;
   font-family: 'Space Grotesk', system-ui, sans-serif;
   min-height: 100vh;
 }
@@ -16,8 +16,8 @@ body {
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #243550; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #334155; }
+::-webkit-scrollbar-thumb { background: #D4CCBC; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #BDB3A0; }
 
 /* ── Animations ── */
 @keyframes pulse-active {
@@ -55,7 +55,7 @@ input, textarea, select, button {
 
 input::placeholder,
 textarea::placeholder {
-  color: #4B5E78;
+  color: #A69C8C;
 }
 
 /* ── Table reset ── */
