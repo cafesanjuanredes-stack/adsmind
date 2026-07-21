@@ -4,6 +4,16 @@ import { T } from '../../tokens'
 import { listAssets, listPiezas, createPieza, deleteAsset, deletePieza } from '../../lib/piezas'
 import { uploadOriginal, uploadPieza, getSignedUrl } from '../../lib/storage'
 import { listSuggestions, useSuggestion, discardSuggestion } from '../../lib/aiSuggestions'
+import { uploadBrandFont, resolveBrandFont } from '../../lib/brand'
+import { BRAND_FONTS } from '../../data/brandFonts'
+
+function hexToRgba(hex, alpha) {
+  const m = (hex || '#000000').replace('#', '')
+  const r = parseInt(m.slice(0, 2), 16) || 0
+  const g = parseInt(m.slice(2, 4), 16) || 0
+  const b = parseInt(m.slice(4, 6), 16) || 0
+  return `rgba(${r},${g},${b},${alpha})`
+}
 
 const DIMENSIONS = {
   historia: { w: 1080, h: 1920, dispW: 162, dispH: 288 },
@@ -27,7 +37,7 @@ function wrapText(ctx, text, maxWidth) {
   return lines
 }
 
-export function ModGenerador({ client, notify }) {
+export function ModGenerador({ client, notify, updateBrand }) {
   const [assets, setAssets]     = useState([])
   const [piezas, setPiezas]     = useState([])
   const [suggestions, setSuggestions] = useState([])
@@ -46,11 +56,36 @@ export function ModGenerador({ client, notify }) {
   const [position,    setPosition]    = useState('bottom')
   const [fontSize,    setFontSize]    = useState(72)
   const [textColor,   setTextColor]   = useState('#FFFFFF')
+  const [bgColor,     setBgColor]     = useState('#000000')
   const [bgBar,       setBgBar]       = useState(true)
   const [saving,      setSaving]      = useState(false)
+  const [resolvedFont, setResolvedFont] = useState('Inter')
+
+  // ── Marca ──────────────────────────────────────────────────────
+  const [showBrand,   setShowBrand]   = useState(false)
+  const [brandForm,   setBrandForm]   = useState(null)
+  const [savingBrand, setSavingBrand] = useState(false)
+  const [uploadingFont, setUploadingFont] = useState(false)
 
   const canvasRef = useRef(null)
   const imgRef    = useRef(null)
+
+  // ── al cambiar de cliente: colores/fuente por defecto = su marca ───
+  useEffect(() => {
+    setTextColor(client.brand?.textColor || '#FFFFFF')
+    setBgColor(client.brand?.bgColor || '#000000')
+    setBrandForm({
+      fontSource: client.brand?.fontSource || 'google',
+      fontFamily: client.brand?.fontFamily || 'Inter',
+      textColor: client.brand?.textColor || '#FFFFFF',
+      bgColor: client.brand?.bgColor || '#000000',
+    })
+    let cancelled = false
+    resolveBrandFont(client)
+      .then(f => { if (!cancelled) setResolvedFont(f) })
+      .catch(() => { if (!cancelled) setResolvedFont('Inter') })
+    return () => { cancelled = true }
+  }, [client.id, client.brand])
 
   // ── cargar banco de assets y piezas al entrar / cambiar de cliente ──
   useEffect(() => {
@@ -111,7 +146,7 @@ export function ModGenerador({ client, notify }) {
   useEffect(() => {
     draw()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipo, overlayText, position, fontSize, textColor, bgBar])
+  }, [tipo, overlayText, position, fontSize, textColor, bgColor, bgBar, resolvedFont])
 
   function draw() {
     const canvas = canvasRef.current
@@ -134,7 +169,7 @@ export function ModGenerador({ client, notify }) {
 
     const text = overlayText.trim()
     if (text) {
-      ctx.font = `700 ${fontSize}px 'Inter', system-ui, sans-serif`
+      ctx.font = `700 ${fontSize}px "${resolvedFont}", system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       const maxWidth = w * 0.86
@@ -148,7 +183,7 @@ export function ModGenerador({ client, notify }) {
 
       if (bgBar) {
         const pad = fontSize * 0.45
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'
+        ctx.fillStyle = hexToRgba(bgColor, 0.55)
         ctx.fillRect(0, centerY - totalHeight / 2 - pad, w, totalHeight + pad * 2)
       }
 
@@ -242,11 +277,93 @@ export function ModGenerador({ client, notify }) {
     }
   }
 
+  const handleUploadFont = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploadingFont(true)
+    try {
+      const path = await uploadBrandFont(client.id, file)
+      setBrandForm(f => ({ ...f, fontSource: 'custom', fontPath: path }))
+      notify('Fuente subida — no olvides "Guardar marca"')
+    } catch (err) {
+      notify('Error subiendo fuente: ' + err.message)
+    } finally {
+      setUploadingFont(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleSaveBrand = async () => {
+    if (!brandForm) return
+    setSavingBrand(true)
+    try {
+      await updateBrand(client.id, {
+        brand_font_source: brandForm.fontSource,
+        brand_font_family: brandForm.fontFamily,
+        ...(brandForm.fontPath ? { brand_font_path: brandForm.fontPath } : {}),
+        brand_text_color: brandForm.textColor,
+        brand_bg_color: brandForm.bgColor,
+      })
+      notify('Marca guardada')
+      setShowBrand(false)
+    } catch (err) {
+      notify('Error guardando marca: ' + err.message)
+    } finally {
+      setSavingBrand(false)
+    }
+  }
+
   const dims = DIMENSIONS[tipo]
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <SLabel accent={client.color}>Generador de historias y posteos</SLabel>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <SLabel accent={client.color}>Generador de historias y posteos</SLabel>
+        <Btn size="sm" variant="ghost" onClick={() => setShowBrand(v => !v)}>🎨 Marca de {client.name}</Btn>
+      </div>
+
+      {showBrand && brandForm && (
+        <Card accent={T.primary}>
+          <SLabel accent={T.primary}>Marca — tipografía y colores del overlay</SLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Fuente de Google Fonts</div>
+              <Sel
+                value={brandForm.fontSource === 'google' ? brandForm.fontFamily : ''}
+                onChange={e => setBrandForm(f => ({ ...f, fontSource: 'google', fontFamily: e.target.value }))}
+                options={BRAND_FONTS.map(f => ({ v: f, l: f }))}
+                style={{ width: '100%' }}
+              />
+              <div style={{ marginTop: 10, fontSize: 20, fontWeight: 700, color: T.text, fontFamily: brandForm.fontSource === 'google' ? `"${brandForm.fontFamily}"` : 'inherit' }}>
+                {client.name}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>O subí la fuente propia de la marca (.woff2 / .ttf / .otf)</div>
+              <label style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: T.surf2, border: `1px solid ${T.border2}`, borderRadius: 7,
+                fontSize: 11, color: T.sub, cursor: uploadingFont ? 'not-allowed' : 'pointer', padding: '8px',
+              }}>
+                {uploadingFont ? 'Subiendo…' : brandForm.fontSource === 'custom' ? '✓ Fuente propia cargada — subir otra' : '+ Subir fuente propia'}
+                <input type="file" accept=".woff,.woff2,.ttf,.otf" style={{ display: 'none' }} onChange={handleUploadFont} disabled={uploadingFont} />
+              </label>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 20, alignItems: 'center', marginBottom: 14 }}>
+            <label style={{ fontSize: 10, color: T.dim, display: 'flex', alignItems: 'center', gap: 6 }}>
+              Color de texto <input type="color" value={brandForm.textColor} onChange={e => setBrandForm(f => ({ ...f, textColor: e.target.value }))} />
+            </label>
+            <label style={{ fontSize: 10, color: T.dim, display: 'flex', alignItems: 'center', gap: 6 }}>
+              Color de franja <input type="color" value={brandForm.bgColor} onChange={e => setBrandForm(f => ({ ...f, bgColor: e.target.value }))} />
+            </label>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Btn onClick={handleSaveBrand} disabled={savingBrand}>{savingBrand ? 'Guardando…' : 'Guardar marca'}</Btn>
+            <Btn variant="ghost" onClick={() => setShowBrand(false)}>Cancelar</Btn>
+          </div>
+        </Card>
+      )}
 
       {suggestions.length > 0 && (
         <Card accent={T.primary}>
@@ -347,11 +464,18 @@ export function ModGenerador({ client, notify }) {
                     onChange={e => setFontSize(+e.target.value)} style={{ width: '100%' }} />
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                <label style={{ fontSize: 10, color: T.dim, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  Texto <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} />
+                </label>
                 <label style={{ fontSize: 11, color: T.sub, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <input type="checkbox" checked={bgBar} onChange={e => setBgBar(e.target.checked)} /> Franja de fondo
                 </label>
+                {bgBar && (
+                  <label style={{ fontSize: 10, color: T.dim, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    Color franja <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} />
+                  </label>
+                )}
               </div>
               {tipo === 'post' && (
                 <div>

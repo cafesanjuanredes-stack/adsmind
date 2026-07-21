@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { CLIENT_COLORS } from '../tokens'
+import { updateBrand as updateBrandKit } from '../lib/brand'
 
 // ── Todo persistido en Supabase ─────────────────────────────────────
 // clients            → identidad del cliente
@@ -80,6 +81,13 @@ export function useClients() {
           content: { works: meta?.content_works || [], fails: meta?.content_fails || [], best_days: meta?.best_days || [], best_time: meta?.best_time || '' },
           ads: meta?.ads || null,
           sentiment: { positive: meta?.sentiment_positive || 0, neutral: meta?.sentiment_neutral || 0, negative: meta?.sentiment_negative || 0 },
+          brand: {
+            fontSource: meta?.brand_font_source || 'google',
+            fontFamily: meta?.brand_font_family || 'Inter',
+            fontPath: meta?.brand_font_path || null,
+            textColor: meta?.brand_text_color || '#FFFFFF',
+            bgColor: meta?.brand_bg_color || '#000000',
+          },
         }
       })
       setClients(assembled)
@@ -192,11 +200,28 @@ export function useClients() {
     }
   }, [clients])
 
+  // ── Marca (tipografía/colores del overlay) ────────────────────────
+  const updateBrand = useCallback(async (clientId, patch) => {
+    await updateBrandKit(clientId, patch)
+    setClients(prev => prev.map(c => c.id === clientId ? { ...c, brand: { ...c.brand, ...toBrandShape(patch) } } : c))
+  }, [])
+
   return {
     clients, loading, loadError, reload,
     addClient, removeClient,
     addPlatform, updatePlatform, removePlatform,
     addHistoryPoint, addViral, removeViral,
     addCompetitor, removeCompetitor,
+    updateBrand,
   }
+}
+
+function toBrandShape(patch) {
+  const out = {}
+  if ('brand_font_source' in patch) out.fontSource = patch.brand_font_source
+  if ('brand_font_family' in patch) out.fontFamily = patch.brand_font_family
+  if ('brand_font_path'   in patch) out.fontPath   = patch.brand_font_path
+  if ('brand_text_color'  in patch) out.textColor  = patch.brand_text_color
+  if ('brand_bg_color'    in patch) out.bgColor    = patch.brand_bg_color
+  return out
 }

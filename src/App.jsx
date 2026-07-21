@@ -14,6 +14,7 @@ import {
   ModBenchmark,
   ModIA,
   ModGenerador,
+  ModCalendario,
 } from './components/modules'
 
 const MODULES = [
@@ -24,6 +25,7 @@ const MODULES = [
   { id: 'benchmark',   label: 'Benchmark' },
   { id: 'ia',          label: '✦ IA Análisis' },
   { id: 'generador',   label: '◆ Generador' },
+  { id: 'calendario',  label: '📅 Calendario' },
 ]
 
 function clientStatus(client) {
@@ -37,7 +39,7 @@ export default function App() {
     clients, loading, loadError, addClient, removeClient,
     addPlatform, updatePlatform, removePlatform,
     addHistoryPoint, addViral, removeViral,
-    addCompetitor, removeCompetitor,
+    addCompetitor, removeCompetitor, updateBrand,
   } = useClients()
 
   const [activeId,  setActiveId]  = useState(null)
@@ -85,7 +87,8 @@ export default function App() {
       case 'contenido':   return <ModContenido   {...shared} addViral={addViral} removeViral={removeViral} />
       case 'benchmark':   return <ModBenchmark   {...shared} addCompetitor={addCompetitor} removeCompetitor={removeCompetitor} />
       case 'ia':          return <ModIA          {...shared} />
-      case 'generador':   return <ModGenerador   {...shared} />
+      case 'generador':   return <ModGenerador   {...shared} updateBrand={updateBrand} />
+      case 'calendario':  return <ModCalendario  {...shared} />
       default:            return <ModResumen     {...shared} />
     }
   }
