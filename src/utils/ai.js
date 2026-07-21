@@ -57,7 +57,7 @@ MEJOR HORARIO: ${client.content.best_days?.join(', ')} · ${client.content.best_
 
 COMPETIDORES: ${client.competitors.map(c => `${c.name} (${fmtNum(c.followers_ig)} IG)`).join(', ')}
 
-AGENCIA COMPLETA: ${allClients.length} clientes. ${allClients.map(c => `${c.name}: ${fmtNum(c.platforms.instagram.followers)} IG`).join(', ')}
+AGENCIA COMPLETA: ${allClients.length} clientes. ${allClients.map(c => `${c.name}: ${fmtNum(c.platforms.instagram?.followers || 0)} IG`).join(', ')}
 
 INSTRUCCIONES:
 - Cuando el usuario pega un link de post, analizá en detalle: tipo, hook, caption, CTA, estimación vs promedios de la cuenta, qué replicar.

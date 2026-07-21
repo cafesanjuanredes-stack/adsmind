@@ -17,6 +17,7 @@ export const T = {
   tk:   '#00F2EA',
   fb:   '#1877F2',
   yt:   '#FF0000',
+  tw:   '#1D9BF0',
   ga:   '#4285F4',
   meta: '#0668E1',
 
@@ -46,6 +47,12 @@ export const PLATFORM_META = {
   tiktok:    { label: 'TikTok',    color: T.tk,   icon: '◉', short: 'TK' },
   facebook:  { label: 'Facebook',  color: T.fb,   icon: '◇', short: 'FB' },
   youtube:   { label: 'YouTube',   color: T.yt,   icon: '▶',  short: 'YT' },
+  twitter:   { label: 'X / Twitter', color: T.tw, icon: '✕', short: 'X'  },
+}
+
+// Fallback seguro para plataformas que todavía no tengan entrada en PLATFORM_META
+export function getPlatformMeta(key) {
+  return PLATFORM_META[key] || { label: key, color: T.dim, icon: '●', short: key?.slice(0, 2).toUpperCase() }
 }
 
 export const CLIENT_COLORS = [

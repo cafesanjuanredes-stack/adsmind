@@ -39,7 +39,7 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
     if (!newViral.title || !newViral.views) return
     const v = { ...newViral, views: +newViral.views, likes: +newViral.likes || 0, comments: +newViral.comments || 0 }
     setVirals(prev => [...prev, v])
-    addViral(client.id, v)
+    addViral(client.id, v).catch(err => notify('Error guardando: ' + err.message))
     setNewViral({ title: '', platform: 'instagram', date: '', views: '', likes: '', comments: '', type: 'Reel' })
     setShowAdd(false)
     notify('Post viral agregado')

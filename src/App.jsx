@@ -35,6 +35,7 @@ export default function App() {
   const { logout } = useAuth()
   const {
     clients, loading, loadError, addClient, removeClient,
+    addPlatform, updatePlatform, removePlatform,
     addHistoryPoint, addViral, removeViral,
     addCompetitor, removeCompetitor,
   } = useClients()
@@ -76,11 +77,11 @@ export default function App() {
 
   const renderModule = () => {
     if (!client) return null
-    const shared = { client, allClients: clients, notify }
+    const shared = { client, allClients: clients, notify, key: client.id }
     switch (activeMod) {
       case 'resumen':     return <ModResumen     {...shared} />
       case 'historico':   return <ModHistorico   {...shared} addHistoryPoint={addHistoryPoint} />
-      case 'plataformas': return <ModPlataformas {...shared} />
+      case 'plataformas': return <ModPlataformas {...shared} addPlatform={addPlatform} updatePlatform={updatePlatform} removePlatform={removePlatform} />
       case 'contenido':   return <ModContenido   {...shared} addViral={addViral} removeViral={removeViral} />
       case 'benchmark':   return <ModBenchmark   {...shared} addCompetitor={addCompetitor} removeCompetitor={removeCompetitor} />
       case 'ia':          return <ModIA          {...shared} />

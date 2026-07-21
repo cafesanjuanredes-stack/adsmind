@@ -9,9 +9,11 @@ function spark(base) {
 }
 
 export function ModResumen({ client, notify }) {
-  const totalFollowers  = Object.values(client.platforms).reduce((s, p) => s + p.followers, 0)
-  const avgEngagement   = (Object.values(client.platforms).reduce((s, p) => s + p.engagement_pct, 0) / 4).toFixed(1)
-  const activeCount     = Object.values(client.platforms).filter(p => p.status === 'active').length
+  const platformList    = Object.values(client.platforms)
+  const totalPlatforms  = platformList.length
+  const totalFollowers  = platformList.reduce((s, p) => s + p.followers, 0)
+  const avgEngagement   = (platformList.reduce((s, p) => s + p.engagement_pct, 0) / Math.max(1, totalPlatforms)).toFixed(1)
+  const activeCount     = platformList.filter(p => p.status === 'active').length
 
   const doDownload = () => {
     const txt = buildClientReport(client, { fmtNum, fmtPct, fmtDate: s => s, PLATFORM_META })
@@ -30,7 +32,7 @@ export function ModResumen({ client, notify }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 10 }}>
         <MetricBig label="Total seguidores"   value={fmtNum(totalFollowers)}  sub="todas las plataformas"    color={client.color}                          sparkValues={spark(totalFollowers)} />
         <MetricBig label="Engagement prom."   value={avgEngagement + '%'}     sub={avgEngagement > 5 ? '↑ Excelente' : '↗ Bueno'} color={avgEngagement > 5 ? T.green : T.orange} sparkValues={spark(+avgEngagement)} />
-        <MetricBig label="Canales activos"    value={`${activeCount} / 4`}    sub="con publicación regular"  color={activeCount >= 3 ? T.green : T.warn}   />
+        <MetricBig label="Canales activos"    value={`${activeCount} / ${totalPlatforms}`} sub="con publicación regular"  color={totalPlatforms && activeCount >= totalPlatforms - 1 ? T.green : T.warn} />
         <MetricBig label="Sentimiento +"      value={client.sentiment.positive + '%'} sub="comentarios positivos" color={T.green}                         sparkValues={spark(client.sentiment.positive)} />
         <MetricBig label="Posts virales"      value={client.virals.length}    sub="registrados en la cuenta" color={T.violet}                              />
         <MetricBig label="Competidores"       value={client.competitors.length} sub="cargados en benchmark"  color={T.dim}                                 />

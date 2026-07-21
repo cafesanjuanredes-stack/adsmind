@@ -27,7 +27,7 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
     const updated = [...history, pt].sort((a, b) => a.date.localeCompare(b.date))
     setHistory(updated)
     setToIdx(updated.length - 1)
-    addHistoryPoint(client.id, pt)
+    addHistoryPoint(client.id, pt).catch(err => notify('Error guardando: ' + err.message))
     setForm({ date: '', followers_ig: '', milestone: '' })
     setShowAdd(false)
     notify('Punto histórico agregado')

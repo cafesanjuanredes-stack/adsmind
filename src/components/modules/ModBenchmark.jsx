@@ -5,6 +5,7 @@ import { fmtNum } from '../../utils/format'
 import { downloadCSV } from '../../utils/download'
 
 export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }) {
+  const ig = client.platforms.instagram || { followers: 0, engagement_pct: 0 }
   const [comps,   setComps]   = useState(client.competitors)
   const [showAdd, setShowAdd] = useState(false)
   const [form,    setForm]    = useState({ name: '', handle: '', followers_ig: '', type: 'Cadena local', notes: '' })
@@ -13,7 +14,7 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
     if (!form.name) return
     const c = { ...form, followers_ig: +form.followers_ig || 0 }
     setComps(prev => [...prev, c])
-    addCompetitor(client.id, c)
+    addCompetitor(client.id, c).catch(err => notify('Error guardando: ' + err.message))
     setForm({ name: '', handle: '', followers_ig: '', type: 'Cadena local', notes: '' })
     setShowAdd(false)
     notify('Competidor agregado')
@@ -21,20 +22,20 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
 
   const del = (idx) => {
     setComps(prev => prev.filter((_, i) => i !== idx))
-    removeCompetitor(client.id, idx)
+    removeCompetitor(client.id, idx).catch(err => notify('Error borrando: ' + err.message))
     notify('Competidor eliminado')
   }
 
   const doDownload = () => {
     downloadCSV([
-      { Nombre: client.name, Handle: '', Seguidores_IG: client.platforms.instagram.followers, Tipo: 'CLIENTE', Notas: '' },
+      { Nombre: client.name, Handle: '', Seguidores_IG: ig.followers, Tipo: 'CLIENTE', Notas: '' },
       ...comps.map(c => ({ Nombre: c.name, Handle: c.handle, Seguidores_IG: c.followers_ig, Tipo: c.type, Notas: c.notes })),
     ], `benchmark_${client.name.replace(/\s/g, '_')}.csv`)
     notify('Benchmark descargado')
   }
 
   const allEntries = [
-    { name: client.name, followers_ig: client.platforms.instagram.followers, color: client.color, isClient: true },
+    { name: client.name, followers_ig: ig.followers, color: client.color, isClient: true },
     ...comps.map(c => ({ ...c, color: T.dim, isClient: false })),
   ]
   const maxFollowers = Math.max(...allEntries.map(e => e.followers_ig))
@@ -84,9 +85,9 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
               <tr style={{ background: client.color + '10' }}>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: client.color }}>★ {client.name}</td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: T.sub }}>—</td>
-                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'JetBrains Mono',monospace", fontWeight: 800, color: client.color }}>{fmtNum(client.platforms.instagram.followers)}</td>
+                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'JetBrains Mono',monospace", fontWeight: 800, color: client.color }}>{fmtNum(ig.followers)}</td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }}><Tag color={client.color}>CLIENTE</Tag></td>
-                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.dim }}>Engagement {client.platforms.instagram.engagement_pct}%</td>
+                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.dim }}>Engagement {ig.engagement_pct}%</td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }} />
               </tr>
               {comps.map((c, i) => (
