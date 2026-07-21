@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext'
 import { T } from '../tokens'
+import { Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 
 export function LoginPage() {
   const { login, error, setError } = useAuth()
@@ -110,7 +111,7 @@ export function LoginPage() {
                     background: T.surf, border: `1px solid ${error ? T.red + '60' : T.border2}`,
                     borderRadius: 8, padding: '10px 40px 10px 13px',
                     fontSize: 13, color: T.text, outline: 'none',
-                    fontFamily: "'IBM Plex Mono', monospace", transition: 'border-color .15s',
+                    fontFamily: 'inherit', transition: 'border-color .15s',
                   }}
                   onFocus={e => e.target.style.borderColor = T.primary}
                   onBlur={e  => e.target.style.borderColor = error ? T.red + '60' : T.border2}
@@ -121,11 +122,11 @@ export function LoginPage() {
                   style={{
                     position: 'absolute', right: 11, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: T.dim, fontSize: 14, padding: 2,
+                    color: T.dim, padding: 2, display: 'flex',
                   }}
                   tabIndex={-1}
                 >
-                  {showPass ? '🙈' : '👁'}
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -159,8 +160,8 @@ export function LoginPage() {
               }}
             >
               {loading
-                ? <><span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>◌</span> Verificando…</>
-                : 'Entrar →'
+                ? <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> Verificando…</>
+                : <>Entrar <ArrowRight size={15} /></>
               }
             </button>
           </form>

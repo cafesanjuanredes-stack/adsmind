@@ -6,6 +6,7 @@ import { uploadOriginal, uploadPieza, getSignedUrl } from '../../lib/storage'
 import { listSuggestions, useSuggestion, discardSuggestion } from '../../lib/aiSuggestions'
 import { uploadBrandFont, resolveBrandFont } from '../../lib/brand'
 import { BRAND_FONTS } from '../../data/brandFonts'
+import { Palette, Sparkles, X, Plus, Check } from 'lucide-react'
 
 function hexToRgba(hex, alpha) {
   const m = (hex || '#000000').replace('#', '')
@@ -319,7 +320,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <SLabel accent={client.color}>Generador de historias y posteos</SLabel>
-        <Btn size="sm" variant="ghost" onClick={() => setShowBrand(v => !v)}>🎨 Marca de {client.name}</Btn>
+        <Btn size="sm" variant="ghost" onClick={() => setShowBrand(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette size={13} /> Marca de {client.name}</Btn>
       </div>
 
       {showBrand && brandForm && (
@@ -345,7 +346,11 @@ export function ModGenerador({ client, notify, updateBrand }) {
                 background: T.surf2, border: `1px solid ${T.border2}`, borderRadius: 7,
                 fontSize: 11, color: T.sub, cursor: uploadingFont ? 'not-allowed' : 'pointer', padding: '8px',
               }}>
-                {uploadingFont ? 'Subiendo…' : brandForm.fontSource === 'custom' ? '✓ Fuente propia cargada — subir otra' : '+ Subir fuente propia'}
+                {uploadingFont
+                  ? 'Subiendo…'
+                  : brandForm.fontSource === 'custom'
+                    ? <><Check size={12} style={{ marginRight: 5, verticalAlign: -2 }} />Fuente propia cargada — subir otra</>
+                    : <><Plus size={12} style={{ marginRight: 5, verticalAlign: -2 }} />Subir fuente propia</>}
                 <input type="file" accept=".woff,.woff2,.ttf,.otf" style={{ display: 'none' }} onChange={handleUploadFont} disabled={uploadingFont} />
               </label>
             </div>
@@ -367,7 +372,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
 
       {suggestions.length > 0 && (
         <Card accent={T.primary}>
-          <SLabel accent={T.primary}>✦ Sugerencias IA — puntos de partida, cada 3 días</SLabel>
+          <SLabel accent={T.primary}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={13} /> Sugerencias IA — puntos de partida, cada 3 días</span></SLabel>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
             {suggestions.map(s => (
               <div key={s.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -376,7 +381,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <Btn size="sm" variant="success" style={{ flex: 1 }} onClick={() => handleUseSuggestion(s)}>Usar</Btn>
-                  <Btn size="sm" variant="danger" onClick={() => handleDiscardSuggestion(s)}>✕</Btn>
+                  <Btn size="sm" variant="danger" onClick={() => handleDiscardSuggestion(s)}><X size={12} /></Btn>
                 </div>
               </div>
             ))}
@@ -397,7 +402,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
               background: T.surf2, border: `1px solid ${T.border2}`, borderRadius: 7,
               fontSize: 11, color: T.sub, cursor: uploading ? 'not-allowed' : 'pointer', padding: '0 8px',
             }}>
-              {uploading ? 'Subiendo…' : '+ Subir'}
+              {uploading ? 'Subiendo…' : <><Plus size={12} style={{ marginRight: 4, verticalAlign: -2 }} />Subir</>}
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
             </label>
           </div>
@@ -418,10 +423,10 @@ export function ModGenerador({ client, notify, updateBrand }) {
                   onClick={() => handleDeleteAsset(a)}
                   style={{
                     position: 'absolute', top: 2, right: 2, width: 16, height: 16, borderRadius: '50%',
-                    background: 'rgba(0,0,0,.6)', color: T.sub, fontSize: 9,
+                    background: 'rgba(0,0,0,.6)', color: '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                   }}
-                >✕</span>
+                ><X size={10} /></span>
               </div>
             ))}
             {!loadingLists && !assets.length && (
@@ -484,8 +489,8 @@ export function ModGenerador({ client, notify, updateBrand }) {
                     placeholder="Texto para el pie del posteo" multiline rows={3} />
                 </div>
               )}
-              <Btn onClick={handleSaveToBanco} disabled={!selectedAsset || saving} variant="success">
-                {saving ? 'Guardando…' : '+ Agregar al banco'}
+              <Btn onClick={handleSaveToBanco} disabled={!selectedAsset || saving} variant="success" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {saving ? 'Guardando…' : <><Plus size={13} /> Agregar al banco</>}
               </Btn>
               {!selectedAsset && (
                 <div style={{ fontSize: 10, color: T.dim }}>Elegí una foto o diseño del banco de la izquierda.</div>
@@ -507,7 +512,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
                   <div style={{ fontSize: 11, color: T.text, fontWeight: 600 }}>{p.tipo === 'historia' ? 'Historia' : 'Post'}</div>
                   <div style={{ fontSize: 9, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{p.estado}</div>
                 </div>
-                <span onClick={() => handleDeletePieza(p)} style={{ cursor: 'pointer', color: T.dim, fontSize: 12 }}>✕</span>
+                <span onClick={() => handleDeletePieza(p)} style={{ cursor: 'pointer', color: T.dim, display: 'flex' }}><X size={13} /></span>
               </div>
             ))}
             {!loadingLists && !piezas.length && (

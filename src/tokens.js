@@ -1,6 +1,8 @@
 // ── AdMind Analytics — Design Tokens ─────────────────────────────
 // Single source of truth for all colors, typography, spacing
 
+import { Camera, Music2, Users, Play, X, Circle } from 'lucide-react'
+
 export const T = {
   // Backgrounds — tema claro
   bg:      '#F5F1EA',
@@ -44,16 +46,16 @@ export const T = {
 }
 
 export const PLATFORM_META = {
-  instagram: { label: 'Instagram', color: T.ig,   icon: '◈', short: 'IG' },
-  tiktok:    { label: 'TikTok',    color: T.tk,   icon: '◉', short: 'TK' },
-  facebook:  { label: 'Facebook',  color: T.fb,   icon: '◇', short: 'FB' },
-  youtube:   { label: 'YouTube',   color: T.yt,   icon: '▶',  short: 'YT' },
-  twitter:   { label: 'X / Twitter', color: T.tw, icon: '✕', short: 'X'  },
+  instagram: { label: 'Instagram', color: T.ig,   icon: Camera, short: 'IG' },
+  tiktok:    { label: 'TikTok',    color: T.tk,   icon: Music2, short: 'TK' },
+  facebook:  { label: 'Facebook',  color: T.fb,   icon: Users,  short: 'FB' },
+  youtube:   { label: 'YouTube',   color: T.yt,   icon: Play,   short: 'YT' },
+  twitter:   { label: 'X / Twitter', color: T.tw, icon: X,      short: 'X'  },
 }
 
 // Fallback seguro para plataformas que todavía no tengan entrada en PLATFORM_META
 export function getPlatformMeta(key) {
-  return PLATFORM_META[key] || { label: key, color: T.dim, icon: '●', short: key?.slice(0, 2).toUpperCase() }
+  return PLATFORM_META[key] || { label: key, color: T.dim, icon: Circle, short: key?.slice(0, 2).toUpperCase() }
 }
 
 export const CLIENT_COLORS = [

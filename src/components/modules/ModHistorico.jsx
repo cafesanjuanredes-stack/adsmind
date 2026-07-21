@@ -4,6 +4,7 @@ import { T } from '../../tokens'
 import { fmtNum, fmtDate, calcGrowth } from '../../utils/format'
 import { downloadCSV } from '../../utils/download'
 import { LineChart } from '../charts/LineChart'
+import { Plus, Download } from 'lucide-react'
 
 export function ModHistorico({ client, notify, addHistoryPoint }) {
   const [history, setHistory]   = useState(client.history)
@@ -48,8 +49,8 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <SLabel accent={T.orange}>Crecimiento histórico — Instagram</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)}>+ Agregar punto</Btn>
-          <Btn size="sm" variant="success" onClick={doDownload}>⬇ CSV</Btn>
+          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={12} /> Agregar punto</Btn>
+          <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> CSV</Btn>
         </div>
       </div>
 
@@ -108,15 +109,15 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {history.map((h, i) => (
             <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, fontFamily: "'IBM Plex Mono',monospace", minWidth: 70 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, fontFamily: 'inherit', minWidth: 70 }}>
                 {fmtDate(h.date)}
               </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: T.text, fontFamily: "'IBM Plex Mono',monospace", minWidth: 65 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: T.text, fontFamily: 'inherit', minWidth: 65 }}>
                 {fmtNum(h.followers_ig)}
               </div>
               <div style={{ fontSize: 11, color: T.dim, flex: 1 }}>{h.milestone || '—'}</div>
               {i > 0 && (
-                <div style={{ fontSize: 11, color: T.green, fontFamily: "'IBM Plex Mono',monospace", whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: 11, color: T.green, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                   +{fmtNum(h.followers_ig - history[i - 1].followers_ig)}
                 </div>
               )}

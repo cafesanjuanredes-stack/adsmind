@@ -16,16 +16,17 @@ import {
   ModGenerador,
   ModCalendario,
 } from './components/modules'
+import { LayoutGrid, TrendingUp, Share2, FileText, BarChart3, Sparkles, Wand2, Calendar, LogOut, X, Plus } from 'lucide-react'
 
 const MODULES = [
-  { id: 'resumen',     label: 'Resumen' },
-  { id: 'historico',   label: 'Histórico' },
-  { id: 'plataformas', label: 'Plataformas' },
-  { id: 'contenido',   label: 'Contenido' },
-  { id: 'benchmark',   label: 'Benchmark' },
-  { id: 'ia',          label: '✦ IA Análisis' },
-  { id: 'generador',   label: '◆ Generador' },
-  { id: 'calendario',  label: '📅 Calendario' },
+  { id: 'resumen',     label: 'Resumen',      icon: LayoutGrid },
+  { id: 'historico',   label: 'Histórico',    icon: TrendingUp },
+  { id: 'plataformas', label: 'Plataformas',  icon: Share2 },
+  { id: 'contenido',   label: 'Contenido',    icon: FileText },
+  { id: 'benchmark',   label: 'Benchmark',    icon: BarChart3 },
+  { id: 'ia',          label: 'IA Análisis',  icon: Sparkles },
+  { id: 'generador',   label: 'Generador',    icon: Wand2 },
+  { id: 'calendario',  label: 'Calendario',   icon: Calendar },
 ]
 
 function clientStatus(client) {
@@ -170,9 +171,9 @@ export default function App() {
                       style={{
                         width: 14, height: 14, borderRadius: '50%',
                         background: T.border2, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 9, color: T.dim, cursor: 'pointer', marginLeft: 2,
+                        color: T.dim, cursor: 'pointer', marginLeft: 2,
                       }}
-                    >✕</span>
+                    ><X size={9} /></span>
                   )}
                 </button>
               )
@@ -189,7 +190,7 @@ export default function App() {
                 fontSize: 11, color: T.dim,
               }}
             >
-              + Cliente
+              <Plus size={12} /> Cliente
             </button>
           </div>
 
@@ -208,7 +209,7 @@ export default function App() {
             onMouseEnter={e => e.currentTarget.style.color = T.red}
             onMouseLeave={e => e.currentTarget.style.color = T.dim}
           >
-            <span>⎋</span> Salir
+            <LogOut size={13} /> Salir
           </button>
         </div>
 
@@ -220,6 +221,7 @@ export default function App() {
                 key={m.id}
                 onClick={() => setActiveMod(m.id)}
                 style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
                   padding: '0 14px', height: 38,
                   border: 'none',
                   borderBottom: `2px solid ${activeMod === m.id ? T.primary : 'transparent'}`,
@@ -232,7 +234,7 @@ export default function App() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {m.label}
+                <m.icon size={13} /> {m.label}
               </button>
             ))}
 

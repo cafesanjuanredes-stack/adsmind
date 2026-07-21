@@ -3,6 +3,7 @@ import { Card, SLabel, MetricBig, Pulse, Btn, Input, Sel } from '../ui'
 import { T, PLATFORM_META } from '../../tokens'
 import { fmtNum, fmtPct, fmtDate } from '../../utils/format'
 import { downloadCSV } from '../../utils/download'
+import { Download, Plus, Calendar, Clock } from 'lucide-react'
 
 const STATUS_OPTIONS = [{ v: 'active', l: 'Activo' }, { v: 'warn', l: 'Atención' }, { v: 'dead', l: 'Inactivo' }]
 
@@ -135,7 +136,7 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <SLabel accent={meta?.color}>Diagnóstico por plataforma</SLabel>
         {platformKeys.length > 0 && (
-          <Btn size="sm" variant="success" onClick={doDownload}>⬇ Todas las plataformas CSV</Btn>
+          <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> Todas las plataformas CSV</Btn>
         )}
       </div>
 
@@ -154,13 +155,13 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
               cursor: 'pointer', color: sel ? m.color : T.sub,
               fontWeight: sel ? 700 : 400, fontSize: 12, fontFamily: 'inherit',
             }}>
-              {m.icon} {m.label}
+              <m.icon size={13} /> {m.label}
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: pl.status === 'active' ? T.active : pl.status === 'warn' ? T.warn : T.dead }} />
             </button>
           )
         })}
         {availableToAdd.length > 0 && (
-          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(v => !v)}>+ Red</Btn>
+          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={12} /> Red</Btn>
         )}
       </div>
 
@@ -264,12 +265,12 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
             </div>
             {p.freq_week > 0 && (
               <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                <div style={{ background: T.surf, borderRadius: 6, padding: '6px 12px', fontSize: 11, color: T.sub }}>
-                  📅 {p.freq_week} post{p.freq_week !== 1 ? 's' : ''} por semana
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: T.surf, borderRadius: 6, padding: '6px 12px', fontSize: 11, color: T.sub }}>
+                  <Calendar size={12} /> {p.freq_week} post{p.freq_week !== 1 ? 's' : ''} por semana
                 </div>
                 {p.video_dur > 0 && (
-                  <div style={{ background: T.surf, borderRadius: 6, padding: '6px 12px', fontSize: 11, color: T.sub }}>
-                    ⏱ {p.video_dur >= 60 ? Math.round(p.video_dur / 60) + ' min' : p.video_dur + ' seg'} duración prom.
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: T.surf, borderRadius: 6, padding: '6px 12px', fontSize: 11, color: T.sub }}>
+                    <Clock size={12} /> {p.video_dur >= 60 ? Math.round(p.video_dur / 60) + ' min' : p.video_dur + ' seg'} duración prom.
                   </div>
                 )}
               </div>
@@ -291,12 +292,12 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
                       <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{fmtDate(v.date)} · {v.type}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: meta.color, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtNum(v.views)}</div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: meta.color, fontFamily: 'inherit' }}>{fmtNum(v.views)}</div>
                       <div style={{ fontSize: 9, color: T.dim }}>views</div>
                     </div>
                     {v.likes > 0 && (
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: T.pink, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtNum(v.likes)}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: T.pink, fontFamily: 'inherit' }}>{fmtNum(v.likes)}</div>
                         <div style={{ fontSize: 9, color: T.dim }}>likes</div>
                       </div>
                     )}

@@ -48,7 +48,7 @@ export function LineChart({ data, color = T.primary, height = 160 }) {
             <g key={t}>
               <line x1={pad.l} x2={w - pad.r} y1={y} y2={y} stroke={T.border} strokeWidth="1" />
               <text x={pad.l - 6} y={y + 4} textAnchor="end" fill={T.dim} fontSize="9"
-                fontFamily="'IBM Plex Mono',monospace">
+                fontFamily="inherit">
                 {fmtNum(v)}
               </text>
             </g>

@@ -3,6 +3,7 @@ import { Card, SLabel, Btn, Input, Sel, Tag, BarH } from '../ui'
 import { T, COMPETITOR_TYPES } from '../../tokens'
 import { fmtNum } from '../../utils/format'
 import { downloadCSV } from '../../utils/download'
+import { Plus, Download, X, Star } from 'lucide-react'
 
 export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }) {
   const ig = client.platforms.instagram || { followers: 0, engagement_pct: 0 }
@@ -45,8 +46,8 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <SLabel accent={T.orange}>Benchmark competitivo</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)}>+ Agregar competidor</Btn>
-          <Btn size="sm" variant="success" onClick={doDownload}>⬇ CSV</Btn>
+          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={12} /> Agregar competidor</Btn>
+          <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> CSV</Btn>
         </div>
       </div>
 
@@ -83,9 +84,9 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
             <tbody>
               {/* Client row */}
               <tr style={{ background: client.color + '10' }}>
-                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: client.color }}>★ {client.name}</td>
-                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: T.sub }}>—</td>
-                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 800, color: client.color }}>{fmtNum(ig.followers)}</td>
+                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontWeight: 700, color: client.color, display: 'flex', alignItems: 'center', gap: 6 }}><Star size={12} fill={client.color} /> {client.name}</td>
+                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: 'inherit', fontSize: 11, color: T.sub }}>—</td>
+                <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: 'inherit', fontWeight: 800, color: client.color }}>{fmtNum(ig.followers)}</td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }}><Tag color={client.color}>CLIENTE</Tag></td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.dim }}>Engagement {ig.engagement_pct}%</td>
                 <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }} />
@@ -93,12 +94,12 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
               {comps.map((c, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? T.surf + '40' : 'transparent' }}>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.text }}>{c.name}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: T.sub }}>{c.handle || '—'}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, color: T.text }}>{fmtNum(c.followers_ig)}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: 'inherit', fontSize: 11, color: T.sub }}>{c.handle || '—'}</td>
+                  <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, fontFamily: 'inherit', fontWeight: 700, color: T.text }}>{fmtNum(c.followers_ig)}</td>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }}><Tag color={T.dim}>{c.type}</Tag></td>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}`, color: T.dim, fontSize: 11 }}>{c.notes || '—'}</td>
                   <td style={{ padding: '10px 12px', borderBottom: `1px solid ${T.border}` }}>
-                    <Btn size="sm" variant="danger" onClick={() => del(i)}>✕</Btn>
+                    <Btn size="sm" variant="danger" onClick={() => del(i)}><X size={12} /></Btn>
                   </td>
                 </tr>
               ))}
@@ -111,7 +112,7 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
       <Card>
         <SLabel>Comparativa seguidores Instagram</SLabel>
         {allEntries.sort((a, b) => b.followers_ig - a.followers_ig).map((e, i) => (
-          <BarH key={i} label={e.isClient ? `★ ${e.name}` : e.name}
+          <BarH key={i} label={e.isClient ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Star size={11} fill={e.color} /> {e.name}</span> : e.name}
             value={e.followers_ig} max={maxFollowers} color={e.color}
             formatted={fmtNum(e.followers_ig)} />
         ))}

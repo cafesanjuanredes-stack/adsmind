@@ -4,6 +4,7 @@ import { T, PLATFORM_META } from '../../tokens'
 import { fmtNum, fmtPct, fmtDate } from '../../utils/format'
 import { downloadTXT } from '../../utils/download'
 import { callClaude, buildClientSystem } from '../../utils/ai'
+import { Sparkles, Download, ArrowRight } from 'lucide-react'
 
 const SUGGESTIONS = [
   'Analizá la cuenta completa',
@@ -24,7 +25,7 @@ function Msg({ role, content }) {
         background: role === 'user' ? T.violet + '40' : `linear-gradient(135deg,${T.primary},${T.cyan})`,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
       }}>
-        {role === 'user' ? 'U' : '✦'}
+        {role === 'user' ? 'U' : <Sparkles size={13} color="#fff" />}
       </div>
       <div style={{
         maxWidth: '80%',
@@ -80,9 +81,9 @@ export function ModIA({ client, allClients, notify }) {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 230px)', minHeight: 400 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <SLabel accent={T.cyan}>✦ IA Análisis — {client.name}</SLabel>
+        <SLabel accent={T.cyan}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={12} /> IA Análisis — {client.name}</span></SLabel>
         {msgs.length > 1 && (
-          <Btn size="sm" variant="success" onClick={doDownload}>⬇ Descargar análisis</Btn>
+          <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> Descargar análisis</Btn>
         )}
       </div>
 
@@ -102,7 +103,7 @@ export function ModIA({ client, allClients, notify }) {
         {msgs.map((m, i) => <Msg key={i} role={m.role} content={m.content} />)}
         {loading && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg,${T.primary},${T.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>✦</div>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg,${T.primary},${T.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Sparkles size={13} color="#fff" /></div>
             <div style={{ background: T.surf, border: `1px solid ${T.border}`, borderRadius: '2px 10px 10px 10px', padding: '10px 13px', fontSize: 12, color: T.dim }}>
               Analizando…
             </div>
@@ -128,12 +129,13 @@ export function ModIA({ client, allClients, notify }) {
           onClick={() => send()}
           disabled={loading || !input.trim()}
           style={{
+            display: 'flex', alignItems: 'center',
             background: `linear-gradient(135deg,${T.primary},${T.violet})`,
             border: 'none', borderRadius: 8, padding: '9px 18px',
             color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13,
             opacity: loading || !input.trim() ? 0.5 : 1,
           }}
-        >→</button>
+        ><ArrowRight size={15} /></button>
       </div>
     </div>
   )

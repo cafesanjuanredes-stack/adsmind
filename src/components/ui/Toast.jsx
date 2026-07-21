@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { T } from '../../tokens'
+import { Check } from 'lucide-react'
 
 export function Toast({ msg, onClose }) {
   useEffect(() => {
@@ -9,6 +10,7 @@ export function Toast({ msg, onClose }) {
   return (
     <div style={{
       position: 'fixed', bottom: 24, right: 24,
+      display: 'flex', alignItems: 'center', gap: 7,
       background: T.green, color: '#fff',
       borderRadius: 8, padding: '10px 16px',
       fontSize: 12, fontWeight: 600,
@@ -16,7 +18,7 @@ export function Toast({ msg, onClose }) {
       boxShadow: `0 4px 20px ${T.green}40`,
       animation: 'slide-up .25s ease',
     }}>
-      ✓ {msg}
+      <Check size={14} /> {msg}
     </div>
   )
 }

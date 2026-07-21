@@ -4,12 +4,13 @@ import { T } from '../../tokens'
 import { listPiezas, updatePiezaEstado } from '../../lib/piezas'
 import { getSignedUrl } from '../../lib/storage'
 import { listVideos, createVideo, updateVideo, deleteVideo } from '../../lib/videosExternos'
+import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play } from 'lucide-react'
 
 const DIA_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const TIPO_META = {
-  historia: { label: 'Historia', color: T.violet, icon: '◐' },
-  post:     { label: 'Post',     color: T.cyan,   icon: '▦' },
-  video:    { label: 'Video',    color: T.orange, icon: '▶' },
+  historia: { label: 'Historia', color: T.violet, icon: CircleDot },
+  post:     { label: 'Post',     color: T.cyan,   icon: LayoutGrid },
+  video:    { label: 'Video',    color: T.orange, icon: Play },
 }
 
 function dayKey(d) {
@@ -153,9 +154,9 @@ export function ModCalendario({ client, notify }) {
         {/* ── Calendario mensual ─────────────────────────────────── */}
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}>← Mes</Btn>
+            <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><ChevronLeft size={13} /> Mes</Btn>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.text, textTransform: 'capitalize' }}>{monthLabel}</div>
-            <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}>Mes →</Btn>
+            <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Mes <ChevronRight size={13} /></Btn>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 4 }}>
@@ -190,12 +191,13 @@ export function ModCalendario({ client, notify }) {
                           title={label}
                           onClick={() => item.kind === 'pieza' ? handleVolverABanco(item.data) : handleToggleVideoPublicado(item.data)}
                           style={{
+                            display: 'flex', alignItems: 'center', gap: 3,
                             fontSize: 9, padding: '2px 4px', borderRadius: 3, cursor: 'pointer',
                             background: meta.color + '20', color: meta.color,
                             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                           }}
                         >
-                          {meta.icon} {label}
+                          <meta.icon size={9} style={{ flexShrink: 0 }} /> {label}
                         </div>
                       )
                     })}
@@ -224,7 +226,7 @@ export function ModCalendario({ client, notify }) {
                     <div style={{ width: 30, height: 30, borderRadius: 4, overflow: 'hidden', flexShrink: 0, background: T.surf }}>
                       {thumbs[p.id] && <img src={thumbs[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     </div>
-                    <div style={{ fontSize: 10, color: meta.color, flexShrink: 0, width: 44 }}>{meta.icon} {meta.label}</div>
+                    <div style={{ fontSize: 10, color: meta.color, flexShrink: 0, width: 44, display: 'flex', alignItems: 'center', gap: 3 }}><meta.icon size={11} /> {meta.label}</div>
                     <input
                       type="date"
                       value={scheduleDates[p.id] || ''}
@@ -242,7 +244,7 @@ export function ModCalendario({ client, notify }) {
           </Card>
 
           <Card accent={T.orange}>
-            <SLabel accent={T.orange}>+ Video externo</SLabel>
+            <SLabel accent={T.orange}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={12} /> Video externo</span></SLabel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Input value={newVideo.titulo} onChange={e => setNewVideo(v => ({ ...v, titulo: e.target.value }))} placeholder="Título del video" />
               <Input value={newVideo.videoUrl} onChange={e => setNewVideo(v => ({ ...v, videoUrl: e.target.value }))} placeholder="Link o path del archivo" mono />
@@ -268,7 +270,7 @@ export function ModCalendario({ client, notify }) {
                       <div style={{ fontSize: 11, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
                       <div style={{ fontSize: 9, color: T.dim }}>{v.scheduled_for ? v.scheduled_for.slice(0, 10) : 'sin fecha'} · {v.estado}</div>
                     </div>
-                    <span onClick={() => handleDeleteVideo(v)} style={{ cursor: 'pointer', color: T.dim, fontSize: 12 }}>✕</span>
+                    <span onClick={() => handleDeleteVideo(v)} style={{ cursor: 'pointer', color: T.dim, display: 'flex' }}><X size={13} /></span>
                   </div>
                 ))}
               </div>

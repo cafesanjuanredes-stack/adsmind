@@ -5,6 +5,7 @@ import { fmtNum, fmtDate } from '../../utils/format'
 import { downloadCSV, downloadTXT } from '../../utils/download'
 import { callClaude, buildClientSystem } from '../../utils/ai'
 import { fmtPct } from '../../utils/format'
+import { Check, X, Calendar, Sparkles, Download, Plus } from 'lucide-react'
 
 export function ModContenido({ client, allClients, notify, addViral, removeViral }) {
   const [virals,      setVirals]      = useState(client.virals)
@@ -61,27 +62,27 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
       {/* Works / Fails */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Card accent={T.green}>
-          <SLabel accent={T.green}>✓ Qué funciona</SLabel>
+          <SLabel accent={T.green}>Qué funciona</SLabel>
           {client.content.works.length
             ? client.content.works.map((w, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 7, fontSize: 12, color: T.sub }}>
-                  <span style={{ color: T.green, fontWeight: 700, flexShrink: 0 }}>✓</span>{w}
+                  <Check size={14} style={{ color: T.green, flexShrink: 0 }} />{w}
                 </div>
               ))
             : <div style={{ fontSize: 12, color: T.dim }}>Sin datos cargados aún.</div>
           }
           {(client.content.best_days?.length > 0 || client.content.best_time) && (
-            <div style={{ marginTop: 10, padding: '8px 10px', background: T.surf, borderRadius: 6, fontSize: 10, color: T.dim }}>
-              📅 Mejor horario: {client.content.best_days?.join(', ')} · {client.content.best_time}
+            <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: T.surf, borderRadius: 6, fontSize: 10, color: T.dim }}>
+              <Calendar size={12} /> Mejor horario: {client.content.best_days?.join(', ')} · {client.content.best_time}
             </div>
           )}
         </Card>
         <Card accent={T.red}>
-          <SLabel accent={T.red}>✗ Qué no funciona</SLabel>
+          <SLabel accent={T.red}>Qué no funciona</SLabel>
           {client.content.fails.length
             ? client.content.fails.map((f, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 7, fontSize: 12, color: T.sub }}>
-                  <span style={{ color: T.red, fontWeight: 700, flexShrink: 0 }}>✗</span>{f}
+                  <X size={14} style={{ color: T.red, flexShrink: 0 }} />{f}
                 </div>
               ))
             : <div style={{ fontSize: 12, color: T.dim }}>Sin datos cargados aún.</div>
@@ -105,12 +106,14 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
           ))}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Btn onClick={analyzeLink} disabled={!link || loading}>{loading ? 'Analizando…' : '✦ Analizar con IA'}</Btn>
+          <Btn onClick={analyzeLink} disabled={!link || loading} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {loading ? 'Analizando…' : <><Sparkles size={13} /> Analizar con IA</>}
+          </Btn>
           {analysis && (
-            <Btn size="sm" variant="success" onClick={() => {
+            <Btn size="sm" variant="success" style={{ display: 'flex', alignItems: 'center', gap: 5 }} onClick={() => {
               downloadTXT(`ANÁLISIS DE POST\nLink: ${link}\nCliente: ${client.name}\n\n${analysis}`, 'analisis_post.txt')
               notify('Análisis descargado')
-            }}>⬇ Descargar</Btn>
+            }}><Download size={12} /> Descargar</Btn>
           )}
         </div>
         {analysis && (
@@ -124,8 +127,8 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <SLabel accent={T.violet}>Posts virales históricos</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)}>+ Agregar</Btn>
-          <Btn size="sm" variant="success" onClick={doDownload}>⬇ CSV</Btn>
+          <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={12} /> Agregar</Btn>
+          <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> CSV</Btn>
         </div>
       </div>
 
@@ -155,18 +158,18 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
           return (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: T.card, border: `1px solid ${T.border}`, borderRadius: 8 }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: i === 0 ? T.orange : T.dim, minWidth: 22 }}>#{i + 1}</div>
-              <div style={{ width: 26, height: 26, borderRadius: 5, background: m.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: m.color }}>{m.icon}</div>
+              <div style={{ width: 26, height: 26, borderRadius: 5, background: m.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', color: m.color }}><m.icon size={13} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: T.text }}>{v.title}</div>
                 <div style={{ fontSize: 10, color: T.dim }}>{m.label} · {v.type}{v.date ? ` · ${fmtDate(v.date)}` : ''}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: m.color, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtNum(v.views)}</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: m.color, fontFamily: 'inherit' }}>{fmtNum(v.views)}</div>
                 <div style={{ fontSize: 9, color: T.dim }}>views</div>
               </div>
               {v.likes > 0 && (
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: T.pink, fontFamily: "'IBM Plex Mono',monospace" }}>{fmtNum(v.likes)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: T.pink, fontFamily: 'inherit' }}>{fmtNum(v.likes)}</div>
                   <div style={{ fontSize: 9, color: T.dim }}>likes</div>
                 </div>
               )}
