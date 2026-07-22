@@ -1,10 +1,10 @@
-import { T } from '../../tokens'
+import { T, RADIUS } from '../../tokens'
 
 const BASE = {
   background: T.surf,
   border: `1px solid ${T.border2}`,
-  borderRadius: 7,
-  padding: '8px 12px',
+  borderRadius: RADIUS.sm - 2,
+  padding: '9px 13px',
   fontSize: 12,
   color: T.text,
   outline: 'none',

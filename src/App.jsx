@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { T, PLATFORM_META } from './tokens'
+import { T, PLATFORM_META, RADIUS } from './tokens'
 import { useAuth } from './auth/AuthContext'
 import { useClients } from './hooks/useClients'
 import { Toast } from './components/ui/Toast'
@@ -151,7 +151,7 @@ export default function App() {
                 >
                   {/* Avatar */}
                   <span style={{
-                    width: 22, height: 22, borderRadius: 5,
+                    width: 22, height: 22, borderRadius: 7,
                     background: c.color + '25',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 8, fontWeight: 800, color: c.color,
@@ -215,22 +215,22 @@ export default function App() {
 
         {/* Module nav */}
         {client && (
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 20px', height: 38, gap: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', gap: 4 }}>
             {MODULES.map(m => (
               <button
                 key={m.id}
                 onClick={() => setActiveMod(m.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '0 14px', height: 38,
+                  padding: '7px 14px',
                   border: 'none',
-                  borderBottom: `2px solid ${activeMod === m.id ? T.primary : 'transparent'}`,
-                  background: 'transparent',
+                  borderRadius: RADIUS.pill,
+                  background: activeMod === m.id ? T.primary + '15' : 'transparent',
                   cursor: 'pointer', fontFamily: 'inherit',
-                  fontWeight: activeMod === m.id ? 600 : 400,
-                  fontSize: 11,
-                  color: activeMod === m.id ? T.primary : T.dim,
-                  transition: 'color .15s, border-color .15s',
+                  fontWeight: activeMod === m.id ? 700 : 500,
+                  fontSize: 11.5,
+                  color: activeMod === m.id ? T.primary : T.sub,
+                  transition: 'color .15s, background .15s',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -248,7 +248,7 @@ export default function App() {
       </div>
 
       {/* ── MAIN CONTENT ──────────────────────────────────────── */}
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
+      <main style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px' }}>
         {renderModule()}
       </main>
 

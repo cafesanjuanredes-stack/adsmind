@@ -45,6 +45,22 @@ export const T = {
   yellow: '#B8860B',
 }
 
+// ── Escala de radios y sombras — sistema de diseño más moderno ──────
+// (tarjetas más redondeadas, sombras suaves en vez de solo bordes planos)
+export const RADIUS = {
+  sm: 10,
+  md: 16,
+  lg: 22,
+  pill: 999,
+}
+
+export const SHADOW = {
+  xs: '0 1px 2px rgba(23,19,16,.05)',
+  sm: '0 2px 8px rgba(23,19,16,.06)',
+  md: '0 8px 24px rgba(23,19,16,.08)',
+  lg: '0 20px 48px rgba(23,19,16,.12)',
+}
+
 export const PLATFORM_META = {
   instagram: { label: 'Instagram', color: T.ig,   icon: Camera, short: 'IG' },
   tiktok:    { label: 'TikTok',    color: T.tk,   icon: Music2, short: 'TK' },

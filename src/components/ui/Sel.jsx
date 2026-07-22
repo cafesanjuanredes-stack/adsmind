@@ -1,4 +1,4 @@
-import { T } from '../../tokens'
+import { T, RADIUS } from '../../tokens'
 
 export function Sel({ value, onChange, options, style: extra }) {
   return (
@@ -8,7 +8,7 @@ export function Sel({ value, onChange, options, style: extra }) {
       style={{
         background: T.surf,
         border: `1px solid ${T.border2}`,
-        borderRadius: 7,
+        borderRadius: RADIUS.sm - 2,
         padding: '8px 12px',
         fontSize: 12,
         color: T.text,

@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, SLabel, Btn, Input } from '../ui'
-import { T } from '../../tokens'
+import { T, RADIUS, SHADOW } from '../../tokens'
 import { listPiezas, updatePiezaEstado } from '../../lib/piezas'
 import { getSignedUrl } from '../../lib/storage'
 import { listVideos, createVideo, updateVideo, deleteVideo } from '../../lib/videosExternos'
-import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play, AlertTriangle, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play, AlertTriangle, Check, Calendar as CalIcon, Rows3, Images, Film } from 'lucide-react'
 
 const DIA_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const TIPO_META = {
   historia: { label: 'Historia', color: T.violet, icon: CircleDot },
   post:     { label: 'Post',     color: T.cyan,   icon: LayoutGrid },
+  carrusel: { label: 'Carrusel', color: T.pink,   icon: Images },
+  reel:     { label: 'Reel',     color: T.green,  icon: Film },
   video:    { label: 'Video',    color: T.orange, icon: Play },
 }
 
@@ -30,8 +32,62 @@ function buildMonthGrid(monthDate) {
   })
 }
 
+function buildWeekGrid(anchorDate) {
+  const d = new Date(anchorDate)
+  const offset = (d.getDay() + 6) % 7 // lunes=0
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - offset)
+  return Array.from({ length: 7 }, (_, i) => {
+    const dd = new Date(monday)
+    dd.setDate(monday.getDate() + i)
+    return dd
+  })
+}
+
+// ── Miniatura de una pieza/video programado — arrastrable ──────────
+function ItemThumb({ item, thumbs, size, onClick, onDragStart, onDragEnd }) {
+  const tipo = item.kind === 'video' ? 'video' : item.data.tipo
+  const meta = TIPO_META[tipo]
+  const isError = item.kind === 'pieza' && item.data.estado === 'error'
+  const isPublished = item.data.estado === 'publicada' || item.data.estado === 'publicado'
+  const img = item.kind === 'pieza' ? thumbs[item.data.id] : null
+  const badgeColor = isError ? T.red : isPublished ? T.active : meta.color
+
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={onClick}
+      style={{
+        position: 'relative', width: size, height: size, borderRadius: RADIUS.sm - 3, overflow: 'hidden',
+        background: T.surf2, cursor: 'grab', flexShrink: 0,
+        border: isError ? `2px solid ${T.red}` : `1px solid ${T.border2}`,
+        boxShadow: SHADOW.xs,
+      }}
+    >
+      {img
+        ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+        : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: meta.color + '18' }}>
+            <meta.icon size={Math.round(size * 0.4)} color={meta.color} />
+          </div>
+        )}
+      <div style={{
+        position: 'absolute', bottom: 3, right: 3, width: 16, height: 16, borderRadius: '50%',
+        background: badgeColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 1px 3px rgba(0,0,0,.35)',
+      }}>
+        {isError ? <AlertTriangle size={9} color="#fff" /> : isPublished ? <Check size={9} color="#fff" /> : <meta.icon size={9} color="#fff" />}
+      </div>
+    </div>
+  )
+}
+
 export function ModCalendario({ client, notify }) {
+  const [view, setView] = useState('mes') // 'mes' | 'semana'
   const [month, setMonth] = useState(() => { const d = new Date(); d.setDate(1); return d })
+  const [weekAnchor, setWeekAnchor] = useState(() => new Date())
   const [piezas, setPiezas] = useState([])
   const [videos, setVideos] = useState([])
   const [thumbs, setThumbs] = useState({})
@@ -41,6 +97,9 @@ export function ModCalendario({ client, notify }) {
   const [savingVideo, setSavingVideo] = useState(false)
   const [scheduleDates, setScheduleDates] = useState({}) // { [piezaId]: 'YYYY-MM-DD' }
   const [scheduleTimes, setScheduleTimes] = useState({}) // { [piezaId]: 'HH:MM' }
+
+  const [dragging, setDragging] = useState(null) // { kind, id, defaultTime }
+  const [dragOverKey, setDragOverKey] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -66,7 +125,7 @@ export function ModCalendario({ client, notify }) {
   }, [piezas])
 
   const banco = piezas.filter(p => p.estado === 'banco')
-  const grid = buildMonthGrid(month)
+  const grid = view === 'mes' ? buildMonthGrid(month) : buildWeekGrid(weekAnchor).map(date => ({ date, inMonth: true }))
 
   const itemsByDay = {}
   for (const p of piezas) {
@@ -81,6 +140,8 @@ export function ModCalendario({ client, notify }) {
   }
 
   const monthLabel = month.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+  const weekDays = buildWeekGrid(weekAnchor)
+  const weekLabel = `${weekDays[0].toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} – ${weekDays[6].toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}`
 
   const handleProgramarPieza = async (pieza) => {
     const dateStr = scheduleDates[pieza.id]
@@ -147,78 +208,173 @@ export function ModCalendario({ client, notify }) {
     }
   }
 
+  // ── Arrastrar y soltar: reprogramar a otro día ─────────────────────
+  const startDrag = (kind, data) => (e) => {
+    const defaultTime = data.scheduled_for ? data.scheduled_for.slice(11, 16) : '10:00'
+    setDragging({ kind, id: data.id, defaultTime })
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const endDrag = () => { setDragging(null); setDragOverKey(null) }
+
+  const handleDropOnDay = async (dateObj) => {
+    if (!dragging) return
+    const dateStr = dayKey(dateObj)
+    const timeStr = dragging.defaultTime || '10:00'
+    try {
+      if (dragging.kind === 'pieza') {
+        await updatePiezaEstado(dragging.id, 'programada', { scheduled_for: new Date(`${dateStr}T${timeStr}:00`).toISOString() })
+        notify('Reprogramado a ' + dateObj.toLocaleDateString('es-AR'))
+      } else {
+        await updateVideo(dragging.id, { scheduled_for: new Date(`${dateStr}T${timeStr}:00`).toISOString() })
+        notify('Video reprogramado a ' + dateObj.toLocaleDateString('es-AR'))
+      }
+      load()
+    } catch (err) {
+      notify('Error reprogramando: ' + err.message)
+    }
+    endDrag()
+  }
+
+  const dayCellProps = (date) => {
+    const key = dayKey(date)
+    return {
+      onDragOver: (e) => { e.preventDefault(); if (dragOverKey !== key) setDragOverKey(key) },
+      onDragLeave: () => { if (dragOverKey === key) setDragOverKey(null) },
+      onDrop: (e) => { e.preventDefault(); handleDropOnDay(date) },
+    }
+  }
+
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <SLabel accent={client.color}>Calendario — {client.name}</SLabel>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <SLabel accent={client.color}>Calendario — {client.name}</SLabel>
+        <div style={{ display: 'flex', gap: 4, background: T.surf, borderRadius: RADIUS.pill, padding: 3 }}>
+          <button onClick={() => setView('mes')} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: RADIUS.pill,
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, fontWeight: 600,
+            background: view === 'mes' ? T.card : 'transparent', color: view === 'mes' ? T.primary : T.dim,
+            boxShadow: view === 'mes' ? SHADOW.xs : 'none',
+          }}><CalIcon size={13} /> Mes</button>
+          <button onClick={() => setView('semana')} style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: RADIUS.pill,
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, fontWeight: 600,
+            background: view === 'semana' ? T.card : 'transparent', color: view === 'semana' ? T.primary : T.dim,
+            boxShadow: view === 'semana' ? SHADOW.xs : 'none',
+          }}><Rows3 size={13} /> Semana</button>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, alignItems: 'start' }}>
 
-        {/* ── Calendario mensual ─────────────────────────────────── */}
+        {/* ── Calendario ──────────────────────────────────────────── */}
         <Card>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><ChevronLeft size={13} /> Mes</Btn>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.text, textTransform: 'capitalize' }}>{monthLabel}</div>
-            <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Mes <ChevronRight size={13} /></Btn>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            {view === 'mes' ? (
+              <>
+                <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><ChevronLeft size={13} /> Mes</Btn>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.text, textTransform: 'capitalize' }}>{monthLabel}</div>
+                <Btn size="sm" variant="ghost" onClick={() => setMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Mes <ChevronRight size={13} /></Btn>
+              </>
+            ) : (
+              <>
+                <Btn size="sm" variant="ghost" onClick={() => setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n })} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><ChevronLeft size={13} /> Semana</Btn>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.text, textTransform: 'capitalize' }}>{weekLabel}</div>
+                <Btn size="sm" variant="ghost" onClick={() => setWeekAnchor(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n })} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Semana <ChevronRight size={13} /></Btn>
+              </>
+            )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 4 }}>
-            {DIA_LABELS.map(l => (
-              <div key={l} style={{ fontSize: 9, color: T.dim, textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}>{l}</div>
-            ))}
-          </div>
+          {view === 'mes' ? (
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6, marginBottom: 6 }}>
+                {DIA_LABELS.map(l => (
+                  <div key={l} style={{ fontSize: 9, color: T.dim, textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}>{l}</div>
+                ))}
+              </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
-            {grid.map(({ date, inMonth }) => {
-              const key = dayKey(date)
-              const items = itemsByDay[key] || []
-              const isToday = key === dayKey(new Date())
-              return (
-                <div key={key} style={{
-                  minHeight: 78, borderRadius: 6, padding: 5,
-                  background: inMonth ? T.surf : 'transparent',
-                  border: `1px solid ${isToday ? T.primary : T.border}`,
-                  opacity: inMonth ? 1 : 0.35,
-                }}>
-                  <div style={{ fontSize: 10, color: isToday ? T.primary : T.dim, fontWeight: isToday ? 800 : 600, marginBottom: 4 }}>
-                    {date.getDate()}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6 }}>
+                {grid.map(({ date, inMonth }) => {
+                  const key = dayKey(date)
+                  const items = itemsByDay[key] || []
+                  const isToday = key === dayKey(new Date())
+                  const isOver = dragOverKey === key
+                  return (
+                    <div key={key} {...dayCellProps(date)} style={{
+                      minHeight: 96, borderRadius: RADIUS.sm - 2, padding: 6,
+                      background: isOver ? T.primary + '12' : inMonth ? T.surf : 'transparent',
+                      border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : T.border}`,
+                      opacity: inMonth ? 1 : 0.35,
+                      transition: 'background .12s, border-color .12s',
+                    }}>
+                      <div style={{ fontSize: 10, color: isToday ? T.primary : T.dim, fontWeight: isToday ? 800 : 600, marginBottom: 5 }}>
+                        {date.getDate()}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                        {items.slice(0, 4).map((item, i) => (
+                          <ItemThumb
+                            key={i} item={item} thumbs={thumbs} size={26}
+                            onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
+                            onClick={() => item.kind === 'pieza' ? handleVolverABanco(item.data) : handleToggleVideoPublicado(item.data)}
+                          />
+                        ))}
+                        {items.length > 4 && (
+                          <div style={{ fontSize: 8, color: T.dim, alignSelf: 'center' }}>+{items.length - 4}</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 8 }}>
+              {weekDays.map(date => {
+                const key = dayKey(date)
+                const items = itemsByDay[key] || []
+                const isToday = key === dayKey(new Date())
+                const isOver = dragOverKey === key
+                return (
+                  <div key={key} {...dayCellProps(date)} style={{
+                    minHeight: 220, borderRadius: RADIUS.sm - 2, padding: 8,
+                    background: isOver ? T.primary + '12' : T.surf,
+                    border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : T.border}`,
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                    transition: 'background .12s, border-color .12s',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.dim, fontWeight: 700, textTransform: 'uppercase' }}>{DIA_LABELS[(date.getDay() + 6) % 7]}</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: isToday ? T.primary : T.text }}>{date.getDate()}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
+                      {items.map((item, i) => {
+                        const label = item.kind === 'video' ? item.data.titulo : (item.data.overlay_text || TIPO_META[item.data.tipo].label)
+                        const time = item.data.scheduled_for ? item.data.scheduled_for.slice(11, 16) : ''
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <ItemThumb
+                              item={item} thumbs={thumbs} size={34}
+                              onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
+                              onClick={() => item.kind === 'pieza' ? handleVolverABanco(item.data) : handleToggleVideoPublicado(item.data)}
+                            />
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontSize: 10, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
+                              {time && <div style={{ fontSize: 9, color: T.dim }}>{time}</div>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {!items.length && <div style={{ fontSize: 9, color: T.dim }}>—</div>}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {items.slice(0, 3).map((item, i) => {
-                      const tipo = item.kind === 'video' ? 'video' : item.data.tipo
-                      const meta = TIPO_META[tipo]
-                      const isError = item.kind === 'pieza' && item.data.estado === 'error'
-                      const isPublished = item.data.estado === 'publicada' || item.data.estado === 'publicado'
-                      const label = item.kind === 'video' ? item.data.titulo : (item.data.overlay_text || meta.label)
-                      const title = isError ? `${label} — ERROR: ${item.data.error_detail || 'no se pudo publicar'}` : label
-                      const color = isError ? T.red : meta.color
-                      return (
-                        <div
-                          key={i}
-                          title={title}
-                          onClick={() => item.kind === 'pieza' ? handleVolverABanco(item.data) : handleToggleVideoPublicado(item.data)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 3,
-                            fontSize: 9, padding: '2px 4px', borderRadius: 3, cursor: 'pointer',
-                            background: color + '20', color,
-                            border: isError ? `1px solid ${T.red}60` : 'none',
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {isError ? <AlertTriangle size={9} style={{ flexShrink: 0 }} /> : isPublished ? <Check size={9} style={{ flexShrink: 0 }} /> : <meta.icon size={9} style={{ flexShrink: 0 }} />} {label}
-                        </div>
-                      )
-                    })}
-                    {items.length > 3 && (
-                      <div style={{ fontSize: 8, color: T.dim }}>+{items.length - 3} más</div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          <div style={{ marginTop: 10, fontSize: 10, color: T.dim }}>
-            Click en una pieza programada = vuelve al banco. Click en un video = marca publicado/programado.
-            {' '}<span style={{ color: T.red }}>Con borde rojo</span> = falló al publicar (pasá el mouse para ver el motivo).
+                )
+              })}
+            </div>
+          )}
+
+          <div style={{ marginTop: 12, fontSize: 10, color: T.dim, lineHeight: 1.6 }}>
+            Arrastrá una miniatura a otro día para reprogramarla. Click = vuelve al banco (piezas) o marca publicado/programado (video).
+            {' '}<span style={{ color: T.red }}>Borde rojo</span> = falló al publicar (pasá el mouse para ver el motivo).
           </div>
         </Card>
 
@@ -226,15 +382,17 @@ export function ModCalendario({ client, notify }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Card>
             <SLabel>Banco sin programar</SLabel>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto' }}>
+            <div style={{ fontSize: 9, color: T.dim, marginBottom: 8, marginTop: -6 }}>Arrastrá una foto directo al calendario, o elegí fecha y hora acá.</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
               {banco.map(p => {
                 const meta = TIPO_META[p.tipo]
                 return (
-                  <div key={p.id} style={{ display: 'flex', gap: 6, alignItems: 'center', background: T.surf2, borderRadius: 6, padding: 6 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: 4, overflow: 'hidden', flexShrink: 0, background: T.surf }}>
-                      {thumbs[p.id] && <img src={thumbs[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                    </div>
-                    <div style={{ fontSize: 10, color: meta.color, flexShrink: 0, width: 44, display: 'flex', alignItems: 'center', gap: 3 }}><meta.icon size={11} /> {meta.label}</div>
+                  <div key={p.id} style={{ display: 'flex', gap: 6, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
+                    <ItemThumb
+                      item={{ kind: 'pieza', data: p }} thumbs={thumbs} size={32}
+                      onDragStart={startDrag('pieza', p)} onDragEnd={endDrag}
+                    />
+                    <div style={{ fontSize: 10, color: meta.color, flexShrink: 0, width: 40, display: 'flex', alignItems: 'center', gap: 3 }}><meta.icon size={11} /> {meta.label}</div>
                     <input
                       type="date"
                       value={scheduleDates[p.id] || ''}
@@ -267,13 +425,13 @@ export function ModCalendario({ client, notify }) {
                   type="date"
                   value={newVideo.scheduledFor}
                   onChange={e => setNewVideo(v => ({ ...v, scheduledFor: e.target.value }))}
-                  style={{ flex: 1, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 7, color: T.text, padding: '8px 12px' }}
+                  style={{ flex: 1, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '8px 12px' }}
                 />
                 <input
                   type="time"
                   value={newVideo.scheduledTime}
                   onChange={e => setNewVideo(v => ({ ...v, scheduledTime: e.target.value }))}
-                  style={{ width: 90, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 7, color: T.text, padding: '8px 8px' }}
+                  style={{ width: 90, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '8px 8px' }}
                 />
               </div>
               <Btn onClick={handleCreateVideo} disabled={!newVideo.titulo || !newVideo.videoUrl || savingVideo}>
@@ -287,7 +445,7 @@ export function ModCalendario({ client, notify }) {
               <SLabel>Videos externos — {client.name}</SLabel>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
                 {videos.map(v => (
-                  <div key={v.id} style={{ display: 'flex', gap: 6, alignItems: 'center', background: T.surf2, borderRadius: 6, padding: 6 }}>
+                  <div key={v.id} style={{ display: 'flex', gap: 6, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
                       <div style={{ fontSize: 9, color: T.dim }}>{v.scheduled_for ? v.scheduled_for.slice(0, 10) : 'sin fecha'} · {v.estado}</div>

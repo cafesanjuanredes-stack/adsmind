@@ -32,3 +32,15 @@ export async function discardSuggestion(suggestion) {
   const { error } = await supabase.from('ai_suggestions').update({ estado: 'descartada' }).eq('id', suggestion.id)
   if (error) throw error
 }
+
+// Genera una sugerencia de IA al toque (en vez de esperar el cron de cada
+// 3 días). Requiere que la Edge Function "generate-design-now" esté
+// deployada y el secret OPENAI_API_KEY configurado.
+export async function generateDesignNow(clientId, prompt) {
+  const { data, error } = await supabase.functions.invoke('generate-design-now', {
+    body: { client_id: clientId, prompt: prompt || undefined },
+  })
+  if (error) throw error
+  if (!data?.ok) throw new Error(data?.error || 'No se pudo generar el diseño')
+  return data.suggestion
+}
