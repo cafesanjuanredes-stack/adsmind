@@ -19,6 +19,14 @@ function dayKey(d) {
   return d.toISOString().slice(0, 10)
 }
 
+// scheduled_for se guarda en UTC — hay que convertirlo a la hora local
+// del navegador (Argentina) para mostrarlo y para reprogramarlo sin que
+// se corra 3 horas en cada drag.
+function localTimeStr(isoUtc) {
+  if (!isoUtc) return ''
+  return new Date(isoUtc).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
 function buildMonthGrid(monthDate) {
   const year = monthDate.getFullYear()
   const month = monthDate.getMonth()
@@ -210,7 +218,7 @@ export function ModCalendario({ client, notify }) {
 
   // ── Arrastrar y soltar: reprogramar a otro día ─────────────────────
   const startDrag = (kind, data) => (e) => {
-    const defaultTime = data.scheduled_for ? data.scheduled_for.slice(11, 16) : '10:00'
+    const defaultTime = data.scheduled_for ? localTimeStr(data.scheduled_for) : '10:00'
     setDragging({ kind, id: data.id, defaultTime })
     e.dataTransfer.effectAllowed = 'move'
   }
@@ -349,7 +357,7 @@ export function ModCalendario({ client, notify }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
                       {items.map((item, i) => {
                         const label = item.kind === 'video' ? item.data.titulo : (item.data.overlay_text || TIPO_META[item.data.tipo].label)
-                        const time = item.data.scheduled_for ? item.data.scheduled_for.slice(11, 16) : ''
+                        const time = localTimeStr(item.data.scheduled_for)
                         return (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <ItemThumb
