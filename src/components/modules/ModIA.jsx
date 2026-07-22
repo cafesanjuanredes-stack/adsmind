@@ -22,15 +22,15 @@ function Msg({ role, content }) {
     <div style={{ display: 'flex', gap: 8, flexDirection: role === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start' }}>
       <div style={{
         width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-        background: role === 'user' ? T.violet + '40' : `linear-gradient(135deg,${T.primary},${T.cyan})`,
+        background: role === 'user' ? T.surf2 : T.primary,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11,
       }}>
         {role === 'user' ? 'U' : <Sparkles size={13} color="#fff" />}
       </div>
       <div style={{
         maxWidth: '80%',
-        background: role === 'user' ? T.violet + '20' : T.surf,
-        border: `1px solid ${role === 'user' ? T.violet + '40' : T.border}`,
+        background: role === 'user' ? T.surf2 : T.surf,
+        border: `1px solid ${T.border}`,
         borderRadius: role === 'user' ? '10px 2px 10px 10px' : '2px 10px 10px 10px',
         padding: '10px 13px',
         fontSize: 12, color: T.text, lineHeight: 1.75, whiteSpace: 'pre-wrap',
@@ -103,7 +103,7 @@ export function ModIA({ client, allClients, notify }) {
         {msgs.map((m, i) => <Msg key={i} role={m.role} content={m.content} />)}
         {loading && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg,${T.primary},${T.cyan})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Sparkles size={13} color="#fff" /></div>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Sparkles size={13} color="#fff" /></div>
             <div style={{ background: T.surf, border: `1px solid ${T.border}`, borderRadius: '2px 10px 10px 10px', padding: '10px 13px', fontSize: 12, color: T.dim }}>
               Analizando…
             </div>
@@ -130,7 +130,7 @@ export function ModIA({ client, allClients, notify }) {
           disabled={loading || !input.trim()}
           style={{
             display: 'flex', alignItems: 'center',
-            background: `linear-gradient(135deg,${T.primary},${T.violet})`,
+            background: T.primary,
             border: 'none', borderRadius: 8, padding: '9px 18px',
             color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13,
             opacity: loading || !input.trim() ? 0.5 : 1,

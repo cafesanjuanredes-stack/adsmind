@@ -1,7 +1,7 @@
 import { T, RADIUS, SHADOW } from '../../tokens'
 
 const VARIANTS = {
-  primary: { background: `linear-gradient(135deg,${T.primary},${T.violet})`, color: '#fff', border: 'none', boxShadow: SHADOW.xs },
+  primary: { background: T.primary, color: '#fff', border: 'none', boxShadow: SHADOW.xs },
   ghost:   { background: T.card, color: T.sub,   border: `1px solid ${T.border2}` },
   success: { background: T.green + '18', color: T.green, border: `1px solid ${T.green}35` },
   danger:  { background: T.red   + '18', color: T.red,   border: `1px solid ${T.red}35`   },

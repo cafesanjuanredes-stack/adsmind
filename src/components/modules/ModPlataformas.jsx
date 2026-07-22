@@ -123,12 +123,12 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
   const platformMetrics = p ? [
     ['Seguidores',    fmtNum(p.followers),           meta.color],
     ['Posts totales', p.posts,                        T.sub],
-    ['Reach %',       fmtPct(p.reach_pct),           p.reach_pct > 15 ? T.green : p.reach_pct > 8 ? T.orange : T.red],
-    ['Engagement %',  fmtPct(p.engagement_pct),      p.engagement_pct > 5 ? T.green : p.engagement_pct > 2 ? T.orange : T.red],
-    ['Views prom.',   fmtNum(p.views_avg),            T.cyan],
-    ['Viral pico',    fmtNum(p.views_viral),          T.violet],
-    ['Posts / sem',   p.freq_week,                    T.orange],
-    ['Completado %',  fmtPct(p.completion_pct),       p.completion_pct > 60 ? T.green : T.orange],
+    ['Reach %',       fmtPct(p.reach_pct),           p.reach_pct > 15 ? T.green : p.reach_pct > 8 ? T.warn : T.red],
+    ['Engagement %',  fmtPct(p.engagement_pct),      p.engagement_pct > 5 ? T.green : p.engagement_pct > 2 ? T.warn : T.red],
+    ['Views prom.',   fmtNum(p.views_avg),            T.dim],
+    ['Viral pico',    fmtNum(p.views_viral),          T.dim],
+    ['Posts / sem',   p.freq_week,                    T.dim],
+    ['Completado %',  fmtPct(p.completion_pct),       p.completion_pct > 60 ? T.green : T.warn],
   ] : []
 
   return (

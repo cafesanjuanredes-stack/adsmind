@@ -148,9 +148,7 @@ export function LoginPage() {
               disabled={loading}
               style={{
                 marginTop: 4,
-                background: loading
-                  ? T.surf2
-                  : `linear-gradient(135deg, ${T.primary}, ${T.violet})`,
+                background: loading ? T.surf2 : T.primary,
                 border: 'none', borderRadius: 8,
                 padding: '11px', fontSize: 13, fontWeight: 700,
                 color: loading ? T.dim : '#fff',

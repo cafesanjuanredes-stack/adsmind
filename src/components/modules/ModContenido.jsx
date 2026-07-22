@@ -157,7 +157,7 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
           const m = PLATFORM_META[v.platform]
           return (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: T.card, border: `1px solid ${T.border}`, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: i === 0 ? T.orange : T.dim, minWidth: 22 }}>#{i + 1}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: i === 0 ? T.primary : T.dim, minWidth: 22 }}>#{i + 1}</div>
               <div style={{ width: 26, height: 26, borderRadius: 5, background: m.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', color: m.color }}><m.icon size={13} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: T.text }}>{v.title}</div>

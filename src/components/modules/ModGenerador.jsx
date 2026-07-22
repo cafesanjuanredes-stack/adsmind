@@ -762,7 +762,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
                     style={{
                       aspectRatio: '1', borderRadius: 6, overflow: 'hidden', cursor: 'pointer',
                       background: '#00000008',
-                      border: selectedSticker?.id === s.id ? `2px solid ${T.violet}` : `1px solid ${T.border2}`,
+                      border: selectedSticker?.id === s.id ? `2px solid ${T.primary}` : `1px solid ${T.border2}`,
                     }}
                   >
                     {stickerThumbs[s.id] && <img src={stickerThumbs[s.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
