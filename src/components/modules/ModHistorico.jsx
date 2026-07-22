@@ -47,7 +47,7 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <SLabel accent={T.orange}>Crecimiento histórico — Instagram</SLabel>
+        <SLabel>Crecimiento histórico — Instagram</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
           <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={12} /> Agregar punto</Btn>
           <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> CSV</Btn>
@@ -56,8 +56,8 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
 
       {/* Add point form */}
       {showAdd && (
-        <Card accent={T.primary}>
-          <SLabel accent={T.primary}>Nuevo punto histórico</SLabel>
+        <Card>
+          <SLabel>Nuevo punto histórico</SLabel>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 10, marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Fecha (AAAA-MM) *</div>
@@ -81,7 +81,7 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
 
       {/* Range selector + chart */}
       <Card>
-        <SLabel accent={T.orange}>Rango de análisis</SLabel>
+        <SLabel>Rango de análisis</SLabel>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div>
             <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Desde</div>
@@ -98,18 +98,18 @@ export function ModHistorico({ client, notify, addHistoryPoint }) {
       {/* Range KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 10 }}>
         <MetricBig label="Seguidores ganados" value={fmtNum(growth)}       sub="en el período seleccionado" color={growth >= 0 ? T.green : T.red} />
-        <MetricBig label="Crecimiento %"      value={growthPct + '%'}      sub={`${fmtDate(first?.date)} → ${fmtDate(last?.date)}`} color={T.orange} />
-        <MetricBig label="Velocidad"          value={fmtNum(weeklySpd) + '/sem'} sub="seguidores por semana prom." color={T.cyan} />
-        <MetricBig label="Mejor momento"      value={fmtDate(bestMonth?.date)} sub={fmtNum(bestMonth?.followers_ig) + ' seg'} color={T.violet} />
+        <MetricBig label="Crecimiento %"      value={growthPct + '%'}      sub={`${fmtDate(first?.date)} → ${fmtDate(last?.date)}`} color={T.dim} />
+        <MetricBig label="Velocidad"          value={fmtNum(weeklySpd) + '/sem'} sub="seguidores por semana prom." color={T.dim} />
+        <MetricBig label="Mejor momento"      value={fmtDate(bestMonth?.date)} sub={fmtNum(bestMonth?.followers_ig) + ' seg'} color={T.dim} />
       </div>
 
       {/* Full timeline */}
       <Card>
-        <SLabel accent={T.violet}>Línea de tiempo completa</SLabel>
+        <SLabel>Línea de tiempo completa</SLabel>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {history.map((h, i) => (
             <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${T.border}` }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.orange, fontFamily: 'inherit', minWidth: 70 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.sub, fontFamily: 'inherit', minWidth: 70 }}>
                 {fmtDate(h.date)}
               </div>
               <div style={{ fontSize: 14, fontWeight: 800, color: T.text, fontFamily: 'inherit', minWidth: 65 }}>

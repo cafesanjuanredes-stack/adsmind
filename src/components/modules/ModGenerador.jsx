@@ -596,8 +596,8 @@ export function ModGenerador({ client, notify, updateBrand }) {
       </div>
 
       {showAiGen && (
-        <Card accent={T.violet}>
-          <SLabel accent={T.violet}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Wand2 size={13} /> Generar diseño con IA ahora</span></SLabel>
+        <Card accent={T.primary}>
+          <SLabel><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Wand2 size={13} /> Generar diseño con IA ahora</span></SLabel>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Input
               value={aiPrompt}

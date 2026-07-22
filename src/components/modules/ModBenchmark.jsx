@@ -44,7 +44,7 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <SLabel accent={T.orange}>Benchmark competitivo</SLabel>
+        <SLabel >Benchmark competitivo</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
           <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={12} /> Agregar competidor</Btn>
           <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> CSV</Btn>
@@ -52,8 +52,8 @@ export function ModBenchmark({ client, notify, addCompetitor, removeCompetitor }
       </div>
 
       {showAdd && (
-        <Card accent={T.orange}>
-          <SLabel accent={T.orange}>Nuevo competidor</SLabel>
+        <Card >
+          <SLabel >Nuevo competidor</SLabel>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
             <div><div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>Nombre *</div><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Amazónico" /></div>
             <div><div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>Handle</div><Input value={form.handle} onChange={e => setForm(p => ({ ...p, handle: e.target.value }))} placeholder="@amazonico.restaurant" mono /></div>

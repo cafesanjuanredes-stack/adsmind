@@ -81,7 +81,7 @@ export function ModIA({ client, allClients, notify }) {
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 230px)', minHeight: 400 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <SLabel accent={T.cyan}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={12} /> IA Análisis — {client.name}</span></SLabel>
+        <SLabel><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={12} /> IA Análisis — {client.name}</span></SLabel>
         {msgs.length > 1 && (
           <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> Descargar análisis</Btn>
         )}

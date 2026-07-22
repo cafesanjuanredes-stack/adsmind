@@ -415,8 +415,8 @@ export function ModCalendario({ client, notify }) {
             </div>
           </Card>
 
-          <Card accent={T.orange}>
-            <SLabel accent={T.orange}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={12} /> Video externo</span></SLabel>
+          <Card>
+            <SLabel><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={12} /> Video externo</span></SLabel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Input value={newVideo.titulo} onChange={e => setNewVideo(v => ({ ...v, titulo: e.target.value }))} placeholder="Título del video" />
               <Input value={newVideo.videoUrl} onChange={e => setNewVideo(v => ({ ...v, videoUrl: e.target.value }))} placeholder="Link o path del archivo" mono />

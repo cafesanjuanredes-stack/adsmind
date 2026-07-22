@@ -91,8 +91,8 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
       </div>
 
       {/* Analyze by link */}
-      <Card accent={T.cyan}>
-        <SLabel accent={T.cyan}>Analizar post por link</SLabel>
+      <Card>
+        <SLabel>Analizar post por link</SLabel>
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Link del post (Instagram, TikTok, YouTube, Facebook…)</div>
           <Input value={link} onChange={e => setLink(e.target.value)} placeholder="https://www.instagram.com/p/..." mono />
@@ -125,7 +125,7 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
 
       {/* Virals list */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <SLabel accent={T.violet}>Posts virales históricos</SLabel>
+        <SLabel>Posts virales históricos</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
           <Btn size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Plus size={12} /> Agregar</Btn>
           <Btn size="sm" variant="success" onClick={doDownload} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Download size={12} /> CSV</Btn>
@@ -133,7 +133,7 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
       </div>
 
       {showAdd && (
-        <Card accent={T.violet}>
+        <Card>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
             <div><div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>Título *</div><Input value={newViral.title} onChange={e => setNewViral(p => ({ ...p, title: e.target.value }))} placeholder="Reel de lasagna…" /></div>
             <div><div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>Plataforma</div><Sel value={newViral.platform} onChange={e => setNewViral(p => ({ ...p, platform: e.target.value }))} options={platformOptions} style={{ width: '100%' }} /></div>

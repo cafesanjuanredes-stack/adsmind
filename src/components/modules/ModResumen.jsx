@@ -32,10 +32,10 @@ export function ModResumen({ client, notify }) {
       {/* Global KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 10 }}>
         <MetricBig label="Total seguidores"   value={fmtNum(totalFollowers)}  sub="todas las plataformas"    color={client.color}                          sparkValues={spark(totalFollowers)} />
-        <MetricBig label="Engagement prom."   value={avgEngagement + '%'}     sub={avgEngagement > 5 ? '↑ Excelente' : '↗ Bueno'} color={avgEngagement > 5 ? T.green : T.orange} sparkValues={spark(+avgEngagement)} />
+        <MetricBig label="Engagement prom."   value={avgEngagement + '%'}     sub={avgEngagement > 5 ? '↑ Excelente' : '↗ Bueno'} color={avgEngagement > 5 ? T.green : T.dim} sparkValues={spark(+avgEngagement)} />
         <MetricBig label="Canales activos"    value={`${activeCount} / ${totalPlatforms}`} sub="con publicación regular"  color={totalPlatforms && activeCount >= totalPlatforms - 1 ? T.green : T.warn} />
         <MetricBig label="Sentimiento +"      value={client.sentiment.positive + '%'} sub="comentarios positivos" color={T.green}                         sparkValues={spark(client.sentiment.positive)} />
-        <MetricBig label="Posts virales"      value={client.virals.length}    sub="registrados en la cuenta" color={T.violet}                              />
+        <MetricBig label="Posts virales"      value={client.virals.length}    sub="registrados en la cuenta" color={T.dim}                              />
         <MetricBig label="Competidores"       value={client.competitors.length} sub="cargados en benchmark"  color={T.dim}                                 />
       </div>
 
