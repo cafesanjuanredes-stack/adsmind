@@ -37,10 +37,32 @@ async function graphPost(path: string, params: Record<string, string>) {
   return json
 }
 
+async function graphGet(path: string, params: Record<string, string>) {
+  const qs = new URLSearchParams(params)
+  const res = await fetch(`${GRAPH}${path}?${qs}`)
+  const json = await res.json()
+  if (!res.ok) throw new Error(json?.error?.message || `Graph API error ${res.status}`)
+  return json
+}
+
 async function signedUrlFor(path: string, expires = 900) {
   const { data, error } = await supabase.storage.from('content').createSignedUrl(path, expires)
   if (error) throw error
   return data.signedUrl
+}
+
+// Meta procesa el archivo de forma asíncrona después de crear el
+// contenedor — publicar antes de que termine tira "Media ID is not
+// available". Hay que esperar a que status_code pase a FINISHED.
+async function waitUntilReady(containerId: string, accessToken: string, maxWaitMs = 18000) {
+  const start = Date.now()
+  while (Date.now() - start < maxWaitMs) {
+    const status = await graphGet(`/${containerId}`, { fields: 'status_code', access_token: accessToken })
+    if (status.status_code === 'FINISHED') return
+    if (status.status_code === 'ERROR') throw new Error('Meta no pudo procesar el archivo (status ERROR)')
+    await new Promise(r => setTimeout(r, 2000))
+  }
+  throw new Error('Timeout esperando a que Meta termine de procesar el archivo')
 }
 
 async function publishPieza(pieza: any, account: any) {
@@ -58,6 +80,7 @@ async function publishPieza(pieza: any, account: any) {
         is_carousel_item: 'true',
         access_token: accessToken,
       })
+      await waitUntilReady(child.id, accessToken)
       childIds.push(child.id)
     }
 
@@ -68,6 +91,7 @@ async function publishPieza(pieza: any, account: any) {
     }
     if (pieza.caption) parentParams.caption = buildCaption(pieza)
     const container = await graphPost(`/${account.ig_user_id}/media`, parentParams)
+    await waitUntilReady(container.id, accessToken)
     return graphPost(`/${account.ig_user_id}/media_publish`, { creation_id: container.id, access_token: accessToken })
   }
 
@@ -88,6 +112,8 @@ async function publishPieza(pieza: any, account: any) {
   }
 
   const container = await graphPost(`/${account.ig_user_id}/media`, containerParams)
+  // Los reels/video tardan bastante más en procesarse que una foto.
+  await waitUntilReady(container.id, accessToken, pieza.tipo === 'reel' ? 25000 : 15000)
   return graphPost(`/${account.ig_user_id}/media_publish`, { creation_id: container.id, access_token: accessToken })
 }
 
