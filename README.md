@@ -6,7 +6,6 @@ Plataforma de análisis de redes sociales para agencias de marketing digital.
 
 - **React 18** + **Vite 5**
 - **Space Grotesk** (UI) + **JetBrains Mono** (datos)
-- **Claude API** (claude-sonnet-4-6) — análisis IA integrado
 
 ## Estructura
 
@@ -25,8 +24,7 @@ src/
 │
 ├── utils/
 │   ├── format.js         # Formatters de números y fechas
-│   ├── download.js       # CSV, TXT, JSON export helpers
-│   └── ai.js             # Claude API — callClaude() + buildClientSystem()
+│   └── download.js       # CSV, TXT, JSON export helpers
 │
 ├── components/
 │   ├── ui/               # Primitivos: Btn, Input, Card, Toast, etc.
@@ -38,7 +36,8 @@ src/
 │   │   ├── ModPlataformas.jsx
 │   │   ├── ModContenido.jsx
 │   │   ├── ModBenchmark.jsx
-│   │   └── ModIA.jsx
+│   │   ├── ModGenerador.jsx
+│   │   └── ModCalendario.jsx
 │   └── AddClientModal.jsx
 ```
 
@@ -63,9 +62,10 @@ npm run build
 | Resumen | KPIs globales, estado por plataforma, sentimiento |
 | Histórico | Línea de tiempo con hitos, análisis por rango de fechas |
 | Plataformas | Diagnóstico profundo por red social, virales históricos |
-| Contenido | ✓/✗ qué funciona, análisis de post por link con IA |
+| Contenido | ✓/✗ qué funciona, posts virales históricos |
 | Benchmark | Tabla comparativa con competidores, gráfico de barras |
-| IA Análisis | Chat con Claude, análisis de cuenta completa, reportes |
+| Generador | Creación de piezas (historia/post/carrusel/reel) con edición y sugerencias de diseño |
+| Calendario | Programación y vista de piezas por día/semana |
 
 ## Descargas disponibles
 

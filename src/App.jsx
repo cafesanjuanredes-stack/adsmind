@@ -12,11 +12,10 @@ import {
   ModPlataformas,
   ModContenido,
   ModBenchmark,
-  ModIA,
   ModGenerador,
   ModCalendario,
 } from './components/modules'
-import { LayoutGrid, TrendingUp, Share2, FileText, BarChart3, Sparkles, Wand2, Calendar, LogOut, X, Plus } from 'lucide-react'
+import { LayoutGrid, TrendingUp, Share2, FileText, BarChart3, Wand2, Calendar, LogOut, X, Plus } from 'lucide-react'
 
 const MODULES = [
   { id: 'resumen',     label: 'Resumen',      icon: LayoutGrid },
@@ -24,7 +23,6 @@ const MODULES = [
   { id: 'plataformas', label: 'Plataformas',  icon: Share2 },
   { id: 'contenido',   label: 'Contenido',    icon: FileText },
   { id: 'benchmark',   label: 'Benchmark',    icon: BarChart3 },
-  { id: 'ia',          label: 'IA Análisis',  icon: Sparkles },
   { id: 'generador',   label: 'Generador',    icon: Wand2 },
   { id: 'calendario',  label: 'Calendario',   icon: Calendar },
 ]
@@ -87,7 +85,6 @@ export default function App() {
       case 'plataformas': return <ModPlataformas {...shared} addPlatform={addPlatform} updatePlatform={updatePlatform} removePlatform={removePlatform} />
       case 'contenido':   return <ModContenido   {...shared} addViral={addViral} removeViral={removeViral} />
       case 'benchmark':   return <ModBenchmark   {...shared} addCompetitor={addCompetitor} removeCompetitor={removeCompetitor} />
-      case 'ia':          return <ModIA          {...shared} />
       case 'generador':   return <ModGenerador   {...shared} updateBrand={updateBrand} />
       case 'calendario':  return <ModCalendario  {...shared} />
       default:            return <ModResumen     {...shared} />

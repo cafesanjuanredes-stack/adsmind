@@ -1,40 +1,14 @@
 import { useState } from 'react'
 import { Card, SLabel, Btn, Input, Sel } from '../ui'
 import { T, PLATFORM_META, POST_TYPES } from '../../tokens'
-import { fmtNum, fmtDate } from '../../utils/format'
-import { downloadCSV, downloadTXT } from '../../utils/download'
-import { callClaude, buildClientSystem } from '../../utils/ai'
-import { fmtPct } from '../../utils/format'
-import { Check, X, Calendar, Sparkles, Download, Plus } from 'lucide-react'
+import { fmtNum, fmtDate, fmtPct } from '../../utils/format'
+import { downloadCSV } from '../../utils/download'
+import { Check, X, Calendar, Download, Plus } from 'lucide-react'
 
 export function ModContenido({ client, allClients, notify, addViral, removeViral }) {
   const [virals,      setVirals]      = useState(client.virals)
   const [showAdd,     setShowAdd]     = useState(false)
   const [newViral,    setNewViral]    = useState({ title: '', platform: 'instagram', date: '', views: '', likes: '', comments: '', type: 'Reel' })
-  const [link,        setLink]        = useState('')
-  const [linkMetrics, setLinkMetrics] = useState({ views: '', likes: '', comments: '', reach: '' })
-  const [analysis,    setAnalysis]    = useState('')
-  const [loading,     setLoading]     = useState(false)
-
-  const analyzeLink = async () => {
-    if (!link) return
-    setLoading(true)
-    setAnalysis('')
-    const system  = buildClientSystem(client, allClients, { fmtNum, fmtPct, fmtDate, PLATFORM_META })
-    const metrics = Object.values(linkMetrics).some(Boolean)
-      ? `\nMétricas reales: views ${linkMetrics.views || 'n/d'}, likes ${linkMetrics.likes || 'n/d'}, comentarios ${linkMetrics.comments || 'n/d'}, reach ${linkMetrics.reach || 'n/d'}`
-      : '\n(Sin métricas reales cargadas)'
-    try {
-      const reply = await callClaude(system, [{
-        role: 'user',
-        content: `Analizá este post en detalle: ${link}${metrics}\n\nGenerá: tipo de contenido, análisis del hook, caption y CTA, estimación de rendimiento vs promedios de la cuenta, qué replicar, y recomendaciones concretas.`,
-      }])
-      setAnalysis(reply)
-    } catch {
-      setAnalysis('⚠️ Error de conexión con la IA.')
-    }
-    setLoading(false)
-  }
 
   const saveViral = () => {
     if (!newViral.title || !newViral.views) return
@@ -89,39 +63,6 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
           }
         </Card>
       </div>
-
-      {/* Analyze by link */}
-      <Card>
-        <SLabel>Analizar post por link</SLabel>
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Link del post (Instagram, TikTok, YouTube, Facebook…)</div>
-          <Input value={link} onChange={e => setLink(e.target.value)} placeholder="https://www.instagram.com/p/..." mono />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 12 }}>
-          {[['Views reales', 'views'], ['Likes reales', 'likes'], ['Comentarios', 'comments'], ['Reach', 'reach']].map(([l, k]) => (
-            <div key={k}>
-              <div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>{l} (opcional)</div>
-              <Input value={linkMetrics[k]} onChange={e => setLinkMetrics(p => ({ ...p, [k]: e.target.value }))} placeholder="0" mono />
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Btn onClick={analyzeLink} disabled={!link || loading} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {loading ? 'Analizando…' : <><Sparkles size={13} /> Analizar con IA</>}
-          </Btn>
-          {analysis && (
-            <Btn size="sm" variant="success" style={{ display: 'flex', alignItems: 'center', gap: 5 }} onClick={() => {
-              downloadTXT(`ANÁLISIS DE POST\nLink: ${link}\nCliente: ${client.name}\n\n${analysis}`, 'analisis_post.txt')
-              notify('Análisis descargado')
-            }}><Download size={12} /> Descargar</Btn>
-          )}
-        </div>
-        {analysis && (
-          <div style={{ marginTop: 12, padding: '12px 14px', background: T.surf, borderRadius: 8, fontSize: 12, color: T.text, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-            {analysis}
-          </div>
-        )}
-      </Card>
 
       {/* Virals list */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
