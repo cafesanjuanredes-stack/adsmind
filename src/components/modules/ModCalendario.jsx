@@ -27,6 +27,12 @@ function localTimeStr(isoUtc) {
   return new Date(isoUtc).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
+// 'en-CA' da directo el formato YYYY-MM-DD, en hora local (no UTC).
+function localDateStr(isoUtc) {
+  if (!isoUtc) return ''
+  return new Date(isoUtc).toLocaleDateString('en-CA')
+}
+
 function buildMonthGrid(monthDate) {
   const year = monthDate.getFullYear()
   const month = monthDate.getMonth()
@@ -109,6 +115,11 @@ export function ModCalendario({ client, notify }) {
   const [dragging, setDragging] = useState(null) // { kind, id, defaultTime }
   const [dragOverKey, setDragOverKey] = useState(null)
 
+  const [editingItem, setEditingItem] = useState(null) // { kind, data }
+  const [editDate, setEditDate] = useState('')
+  const [editTime, setEditTime] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -168,9 +179,39 @@ export function ModCalendario({ client, notify }) {
     try {
       await updatePiezaEstado(pieza.id, 'banco', { scheduled_for: null })
       notify('Volvió al banco')
+      closeEdit()
       load()
     } catch (err) {
       notify('Error: ' + err.message)
+    }
+  }
+
+  // ── Editar fecha/hora de algo ya programado ───────────────────────
+  const openEdit = (kind, data) => {
+    setEditingItem({ kind, data })
+    setEditDate(data.scheduled_for ? localDateStr(data.scheduled_for) : dayKey(new Date()))
+    setEditTime(data.scheduled_for ? localTimeStr(data.scheduled_for) : '10:00')
+  }
+
+  const closeEdit = () => setEditingItem(null)
+
+  const handleSaveEdit = async () => {
+    if (!editingItem || !editDate || !editTime) return
+    setSavingEdit(true)
+    const iso = new Date(`${editDate}T${editTime}:00`).toISOString()
+    try {
+      if (editingItem.kind === 'pieza') {
+        await updatePiezaEstado(editingItem.data.id, 'programada', { scheduled_for: iso, error_detail: null })
+      } else {
+        await updateVideo(editingItem.data.id, { scheduled_for: iso })
+      }
+      notify('Horario actualizado')
+      closeEdit()
+      load()
+    } catch (err) {
+      notify('Error actualizando horario: ' + err.message)
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -323,7 +364,7 @@ export function ModCalendario({ client, notify }) {
                           <ItemThumb
                             key={i} item={item} thumbs={thumbs} size={26}
                             onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
-                            onClick={() => item.kind === 'pieza' ? handleVolverABanco(item.data) : handleToggleVideoPublicado(item.data)}
+                            onClick={() => openEdit(item.kind, item.data)}
                           />
                         ))}
                         {items.length > 4 && (
@@ -363,7 +404,7 @@ export function ModCalendario({ client, notify }) {
                             <ItemThumb
                               item={item} thumbs={thumbs} size={34}
                               onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
-                              onClick={() => item.kind === 'pieza' ? handleVolverABanco(item.data) : handleToggleVideoPublicado(item.data)}
+                              onClick={() => openEdit(item.kind, item.data)}
                             />
                             <div style={{ minWidth: 0, flex: 1 }}>
                               <div style={{ fontSize: 10, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</div>
@@ -381,13 +422,52 @@ export function ModCalendario({ client, notify }) {
           )}
 
           <div style={{ marginTop: 12, fontSize: 10, color: T.dim, lineHeight: 1.6 }}>
-            Arrastrá una miniatura a otro día para reprogramarla. Click = vuelve al banco (piezas) o marca publicado/programado (video).
-            {' '}<span style={{ color: T.red }}>Borde rojo</span> = falló al publicar (pasá el mouse para ver el motivo).
+            Arrastrá una miniatura a otro día para reprogramarla (mantiene el horario). Click = editar fecha/hora.
+            {' '}<span style={{ color: T.red }}>Borde rojo</span> = falló al publicar.
           </div>
         </Card>
 
         {/* ── Sidebar: banco pendiente + video externo ───────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {editingItem && (
+            <Card accent={T.primary}>
+              <SLabel accent={T.primary}>Editar horario</SLabel>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <ItemThumb item={editingItem} thumbs={thumbs} size={38} onDragStart={() => {}} onDragEnd={() => {}} onClick={() => {}} />
+                <div style={{ fontSize: 11, color: T.text, minWidth: 0, flex: 1 }}>
+                  {editingItem.kind === 'video' ? editingItem.data.titulo : (editingItem.data.overlay_text || TIPO_META[editingItem.data.tipo]?.label)}
+                </div>
+              </div>
+              {editingItem.kind === 'pieza' && editingItem.data.estado === 'error' && editingItem.data.error_detail && (
+                <div style={{ fontSize: 10, color: T.red, background: T.red + '12', borderRadius: 6, padding: '7px 9px', marginBottom: 10, lineHeight: 1.5 }}>
+                  Falló: {editingItem.data.error_detail}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <input
+                  type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
+                  style={{ flex: 1, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '8px 10px' }}
+                />
+                <input
+                  type="time" value={editTime} onChange={e => setEditTime(e.target.value)}
+                  style={{ width: 90, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '8px 8px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <Btn size="sm" onClick={handleSaveEdit} disabled={savingEdit}>{savingEdit ? 'Guardando…' : 'Guardar horario'}</Btn>
+                {editingItem.kind === 'pieza' && (
+                  <Btn size="sm" variant="ghost" onClick={() => handleVolverABanco(editingItem.data)}>Volver al banco</Btn>
+                )}
+                {editingItem.kind === 'video' && (
+                  <Btn size="sm" variant="ghost" onClick={() => { handleToggleVideoPublicado(editingItem.data); closeEdit() }}>
+                    Marcar {editingItem.data.estado === 'publicado' ? 'sin publicar' : 'publicado'}
+                  </Btn>
+                )}
+                <Btn size="sm" variant="ghost" onClick={closeEdit}>Cancelar</Btn>
+              </div>
+            </Card>
+          )}
+
           <Card>
             <SLabel>Banco sin programar</SLabel>
             <div style={{ fontSize: 9, color: T.dim, marginBottom: 8, marginTop: -6 }}>Arrastrá una foto directo al calendario, o elegí fecha y hora acá.</div>
