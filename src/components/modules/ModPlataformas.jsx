@@ -3,7 +3,7 @@ import { Card, SLabel, MetricBig, Pulse, Btn, Input, Sel } from '../ui'
 import { T, PLATFORM_META } from '../../tokens'
 import { fmtNum, fmtPct, fmtDate } from '../../utils/format'
 import { downloadCSV } from '../../utils/download'
-import { Download, Plus, Calendar, Clock } from 'lucide-react'
+import { Download, Plus, Calendar, Clock, ExternalLink } from 'lucide-react'
 
 const STATUS_OPTIONS = [{ v: 'active', l: 'Activo' }, { v: 'warn', l: 'Atención' }, { v: 'dead', l: 'Inactivo' }]
 
@@ -288,7 +288,14 @@ export function ModPlataformas({ client, notify, addPlatform, updatePlatform, re
                       {i + 1}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, color: T.text, fontWeight: 500 }}>{v.title}</div>
+                      <div style={{ fontSize: 12, color: T.text, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        {v.title}
+                        {v.url && (
+                          <a href={v.url} target="_blank" rel="noreferrer" title="Abrir post" style={{ color: T.dim, display: 'flex', alignItems: 'center' }}>
+                            <ExternalLink size={11} />
+                          </a>
+                        )}
+                      </div>
                       <div style={{ fontSize: 10, color: T.dim, marginTop: 2 }}>{fmtDate(v.date)} · {v.type}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>

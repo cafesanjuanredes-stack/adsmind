@@ -3,7 +3,7 @@ import { T, PLATFORM_META } from '../../tokens'
 import { fmtNum, fmtPct } from '../../utils/format'
 import { downloadTXT, buildClientReport } from '../../utils/download'
 import { Btn } from '../ui/Btn'
-import { Download } from 'lucide-react'
+import { Download, ExternalLink } from 'lucide-react'
 
 function spark(base) {
   return Array.from({ length: 10 }, (_, i) => base * (0.85 + Math.random() * 0.3) * (1 + i * 0.02))
@@ -49,6 +49,12 @@ export function ModResumen({ client, notify }) {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: meta.color, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>
                     <meta.icon size={12} strokeWidth={2.25} /> {meta.label}
+                    {p.profile_url && (
+                      <a href={p.profile_url} target="_blank" rel="noreferrer" title="Abrir perfil"
+                        style={{ color: meta.color, display: 'flex', alignItems: 'center', marginLeft: 2 }}>
+                        <ExternalLink size={11} />
+                      </a>
+                    )}
                   </div>
                   <div style={{ fontSize: 28, fontWeight: 800, color: T.text, fontFamily: 'inherit', lineHeight: 1 }}>
                     {fmtNum(p.followers)}

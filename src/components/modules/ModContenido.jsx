@@ -3,19 +3,19 @@ import { Card, SLabel, Btn, Input, Sel } from '../ui'
 import { T, PLATFORM_META, POST_TYPES } from '../../tokens'
 import { fmtNum, fmtDate, fmtPct } from '../../utils/format'
 import { downloadCSV } from '../../utils/download'
-import { Check, X, Calendar, Download, Plus } from 'lucide-react'
+import { Check, X, Calendar, Download, Plus, ExternalLink } from 'lucide-react'
 
 export function ModContenido({ client, allClients, notify, addViral, removeViral }) {
   const [virals,      setVirals]      = useState(client.virals)
   const [showAdd,     setShowAdd]     = useState(false)
-  const [newViral,    setNewViral]    = useState({ title: '', platform: 'instagram', date: '', views: '', likes: '', comments: '', type: 'Reel' })
+  const [newViral,    setNewViral]    = useState({ title: '', platform: 'instagram', date: '', views: '', likes: '', comments: '', type: 'Reel', url: '' })
 
   const saveViral = () => {
     if (!newViral.title || !newViral.views) return
     const v = { ...newViral, views: +newViral.views, likes: +newViral.likes || 0, comments: +newViral.comments || 0 }
     setVirals(prev => [...prev, v])
     addViral(client.id, v).catch(err => notify('Error guardando: ' + err.message))
-    setNewViral({ title: '', platform: 'instagram', date: '', views: '', likes: '', comments: '', type: 'Reel' })
+    setNewViral({ title: '', platform: 'instagram', date: '', views: '', likes: '', comments: '', type: 'Reel', url: '' })
     setShowAdd(false)
     notify('Post viral agregado')
   }
@@ -81,6 +81,10 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
             <div><div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>Fecha (AAAA-MM)</div><Input value={newViral.date} onChange={e => setNewViral(p => ({ ...p, date: e.target.value }))} placeholder="2024-03" mono /></div>
             <div><div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>Tipo</div><Sel value={newViral.type} onChange={e => setNewViral(p => ({ ...p, type: e.target.value }))} options={POST_TYPES} style={{ width: '100%' }} /></div>
           </div>
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>Link al post/video (opcional)</div>
+            <Input value={newViral.url} onChange={e => setNewViral(p => ({ ...p, url: e.target.value }))} placeholder="https://www.instagram.com/reel/…" mono />
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
             {[['Views *', 'views'], ['Likes', 'likes'], ['Comentarios', 'comments']].map(([l, k]) => (
               <div key={k}><div style={{ fontSize: 9, color: T.dim, marginBottom: 3 }}>{l}</div><Input value={newViral[k]} onChange={e => setNewViral(p => ({ ...p, [k]: e.target.value }))} placeholder="0" mono /></div>
@@ -101,7 +105,14 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
               <div style={{ fontSize: 12, fontWeight: 800, color: i === 0 ? T.primary : T.dim, minWidth: 22 }}>#{i + 1}</div>
               <div style={{ width: 26, height: 26, borderRadius: 5, background: m.color + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', color: m.color }}><m.icon size={13} /></div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, color: T.text }}>{v.title}</div>
+                <div style={{ fontSize: 12, color: T.text, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {v.title}
+                  {v.url && (
+                    <a href={v.url} target="_blank" rel="noreferrer" title="Abrir post" style={{ color: T.dim, display: 'flex', alignItems: 'center' }}>
+                      <ExternalLink size={11} />
+                    </a>
+                  )}
+                </div>
                 <div style={{ fontSize: 10, color: T.dim }}>{m.label} · {v.type}{v.date ? ` · ${fmtDate(v.date)}` : ''}</div>
               </div>
               <div style={{ textAlign: 'right' }}>

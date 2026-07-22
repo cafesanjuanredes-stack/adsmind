@@ -76,7 +76,7 @@ export function useClients() {
           color: row.color || CLIENT_COLORS[0],
           platforms: Object.fromEntries((platformsByClient[row.id] || []).map(p => [p.platform, platformRowToObj(p)])),
           history: (historyByClient[row.id] || []).map(h => ({ date: h.date, followers_ig: h.followers, milestone: h.milestone || '' })),
-          virals: (viralsByClient[row.id] || []).map(v => ({ id: v.id, title: v.title, platform: v.platform, date: v.date, views: v.views, likes: v.likes, comments: v.comments, type: v.type })),
+          virals: (viralsByClient[row.id] || []).map(v => ({ id: v.id, title: v.title, platform: v.platform, date: v.date, views: v.views, likes: v.likes, comments: v.comments, type: v.type, url: v.url || '' })),
           competitors: (compsByClient[row.id] || []).map(c => ({ id: c.id, name: c.name, handle: c.handle, followers_ig: c.followers_ig, type: c.type, notes: c.notes })),
           content: { works: meta?.content_works || [], fails: meta?.content_fails || [], best_days: meta?.best_days || [], best_time: meta?.best_time || '' },
           ads: meta?.ads || null,
@@ -167,6 +167,7 @@ export function useClients() {
     const { data, error } = await supabase.from('client_virals').insert({
       client_id: id, title: viral.title, platform: viral.platform, date: viral.date || null,
       views: viral.views, likes: viral.likes || 0, comments: viral.comments || 0, type: viral.type,
+      url: viral.url || null,
     }).select().single()
     if (error) throw error
     setClients(prev => prev.map(c => c.id === id ? { ...c, virals: [...c.virals, { ...viral, id: data.id }] } : c))
