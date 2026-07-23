@@ -4,15 +4,15 @@
 import { Camera, Music2, Users, Play, X, Circle } from 'lucide-react'
 
 export const T = {
-  // Backgrounds — tema claro
-  bg:      '#F5F1EA',
+  // Backgrounds — tema claro, look limpio/neutro
+  bg:      '#F9FAFB',
   card:    '#FFFFFF',
-  surf:    '#F7F4EE',
-  surf2:   '#EFEAE1',
+  surf:    '#F7F8FA',
+  surf2:   '#F1F3F5',
 
   // Borders
-  border:  '#E2DCD0',
-  border2: '#D4CCBC',
+  border:  '#E9ECEF',
+  border2: '#DEE2E6',
 
   // Platform brand colors
   ig:   '#E1306C',
@@ -29,9 +29,9 @@ export const T = {
   dead:   '#EF4444',
 
   // Text
-  text: '#171310',
-  sub:  '#6B6459',
-  dim:  '#A69C8C',
+  text: '#16181D',
+  sub:  '#5C6470',
+  dim:  '#98A2B3',
 
   // Accents
   primary: '#E23F79',
@@ -55,10 +55,10 @@ export const RADIUS = {
 }
 
 export const SHADOW = {
-  xs: '0 1px 2px rgba(23,19,16,.05)',
-  sm: '0 2px 8px rgba(23,19,16,.06)',
-  md: '0 8px 24px rgba(23,19,16,.08)',
-  lg: '0 20px 48px rgba(23,19,16,.12)',
+  xs: '0 1px 2px rgba(16,24,40,.04)',
+  sm: '0 1px 3px rgba(16,24,40,.05)',
+  md: '0 4px 16px rgba(16,24,40,.06)',
+  lg: '0 12px 32px rgba(16,24,40,.10)',
 }
 
 export const PLATFORM_META = {

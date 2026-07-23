@@ -14,16 +14,24 @@ function MiniSpark({ data, color, h = 28 }) {
   )
 }
 
-export function MetricBig({ label, value, sub, color = T.primary, sparkValues }) {
+export function MetricBig({ label, value, sub, color = T.primary, sparkValues, icon: Icon }) {
   return (
-    <div style={{ background: T.surf, border: `1px solid ${T.border}`, borderRadius: RADIUS.sm, padding: '14px 16px', transition: 'border-color .15s' }}>
-      <div style={{ fontSize: 9, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6, fontWeight: 600 }}>
-        {label}
-      </div>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: RADIUS.md, padding: '16px 18px', transition: 'border-color .15s' }}>
+      {Icon && (
+        <div style={{
+          width: 32, height: 32, borderRadius: RADIUS.sm, background: T.surf2,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+        }}>
+          <Icon size={15} color={T.sub} strokeWidth={2} />
+        </div>
+      )}
       <div style={{ fontSize: 25, fontWeight: 800, color: T.text, fontFamily: 'inherit', lineHeight: 1, letterSpacing: '-0.01em' }}>
         {value}
       </div>
-      {sub && <div style={{ fontSize: 10, color, marginTop: 5, fontWeight: 500 }}>{sub}</div>}
+      <div style={{ fontSize: 11.5, color: T.dim, marginTop: 6, fontWeight: 500 }}>
+        {label}
+      </div>
+      {sub && <div style={{ fontSize: 10, color, marginTop: 4, fontWeight: 600 }}>{sub}</div>}
       {sparkValues && <MiniSpark data={sparkValues} color={color} />}
     </div>
   )

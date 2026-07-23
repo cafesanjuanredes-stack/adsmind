@@ -3,7 +3,7 @@ import { T, PLATFORM_META } from '../../tokens'
 import { fmtNum, fmtPct } from '../../utils/format'
 import { downloadTXT, buildClientReport } from '../../utils/download'
 import { Btn } from '../ui/Btn'
-import { Download, ExternalLink } from 'lucide-react'
+import { Download, ExternalLink, Users2, Activity, Share2, Smile, Flame, Swords } from 'lucide-react'
 
 function spark(base) {
   return Array.from({ length: 10 }, (_, i) => base * (0.85 + Math.random() * 0.3) * (1 + i * 0.02))
@@ -31,12 +31,12 @@ export function ModResumen({ client, notify }) {
 
       {/* Global KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 10 }}>
-        <MetricBig label="Total seguidores"   value={fmtNum(totalFollowers)}  sub="todas las plataformas"    color={client.color}                          sparkValues={spark(totalFollowers)} />
-        <MetricBig label="Engagement prom."   value={avgEngagement + '%'}     sub={avgEngagement > 5 ? '↑ Excelente' : '↗ Bueno'} color={avgEngagement > 5 ? T.green : T.dim} sparkValues={spark(+avgEngagement)} />
-        <MetricBig label="Canales activos"    value={`${activeCount} / ${totalPlatforms}`} sub="con publicación regular"  color={totalPlatforms && activeCount >= totalPlatforms - 1 ? T.green : T.warn} />
-        <MetricBig label="Sentimiento +"      value={client.sentiment.positive + '%'} sub="comentarios positivos" color={T.green}                         sparkValues={spark(client.sentiment.positive)} />
-        <MetricBig label="Posts virales"      value={client.virals.length}    sub="registrados en la cuenta" color={T.dim}                              />
-        <MetricBig label="Competidores"       value={client.competitors.length} sub="cargados en benchmark"  color={T.dim}                                 />
+        <MetricBig icon={Users2}  label="Total seguidores"   value={fmtNum(totalFollowers)}  sub="todas las plataformas"    color={client.color}                          sparkValues={spark(totalFollowers)} />
+        <MetricBig icon={Activity} label="Engagement prom."   value={avgEngagement + '%'}     sub={avgEngagement > 5 ? '↑ Excelente' : '↗ Bueno'} color={avgEngagement > 5 ? T.green : T.dim} sparkValues={spark(+avgEngagement)} />
+        <MetricBig icon={Share2}  label="Canales activos"    value={`${activeCount} / ${totalPlatforms}`} sub="con publicación regular"  color={totalPlatforms && activeCount >= totalPlatforms - 1 ? T.green : T.warn} />
+        <MetricBig icon={Smile}  label="Sentimiento +"      value={client.sentiment.positive + '%'} sub="comentarios positivos" color={T.green}                         sparkValues={spark(client.sentiment.positive)} />
+        <MetricBig icon={Flame}  label="Posts virales"      value={client.virals.length}    sub="registrados en la cuenta" color={T.dim}                              />
+        <MetricBig icon={Swords} label="Competidores"       value={client.competitors.length} sub="cargados en benchmark"  color={T.dim}                                 />
       </div>
 
       {/* Platform cards */}

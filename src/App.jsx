@@ -14,15 +14,19 @@ import {
   ModBenchmark,
   ModGenerador,
   ModCalendario,
+  ModAnuncios,
+  ModEstrategia,
 } from './components/modules'
-import { LayoutGrid, TrendingUp, Share2, FileText, BarChart3, Wand2, Calendar, LogOut, X, Plus } from 'lucide-react'
+import { LayoutGrid, TrendingUp, Share2, FileText, BarChart3, Wand2, Calendar, LogOut, X, Plus, Megaphone, Compass } from 'lucide-react'
 
 const MODULES = [
   { id: 'resumen',     label: 'Resumen',      icon: LayoutGrid },
+  { id: 'estrategia',  label: 'Estrategia',   icon: Compass },
   { id: 'historico',   label: 'Histórico',    icon: TrendingUp },
   { id: 'plataformas', label: 'Plataformas',  icon: Share2 },
   { id: 'contenido',   label: 'Contenido',    icon: FileText },
   { id: 'benchmark',   label: 'Benchmark',    icon: BarChart3 },
+  { id: 'anuncios',    label: 'Anuncios',     icon: Megaphone },
   { id: 'generador',   label: 'Generador',    icon: Wand2 },
   { id: 'calendario',  label: 'Calendario',   icon: Calendar },
 ]
@@ -81,10 +85,12 @@ export default function App() {
     const shared = { client, allClients: clients, notify, key: client.id }
     switch (activeMod) {
       case 'resumen':     return <ModResumen     {...shared} />
+      case 'estrategia':  return <ModEstrategia  {...shared} />
       case 'historico':   return <ModHistorico   {...shared} addHistoryPoint={addHistoryPoint} />
       case 'plataformas': return <ModPlataformas {...shared} addPlatform={addPlatform} updatePlatform={updatePlatform} removePlatform={removePlatform} />
       case 'contenido':   return <ModContenido   {...shared} addViral={addViral} removeViral={removeViral} />
       case 'benchmark':   return <ModBenchmark   {...shared} addCompetitor={addCompetitor} removeCompetitor={removeCompetitor} />
+      case 'anuncios':    return <ModAnuncios    {...shared} />
       case 'generador':   return <ModGenerador   {...shared} updateBrand={updateBrand} />
       case 'calendario':  return <ModCalendario  {...shared} />
       default:            return <ModResumen     {...shared} />
