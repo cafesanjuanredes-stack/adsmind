@@ -23,6 +23,11 @@ const supabase = createClient(
 const YT_API_KEY = Deno.env.get('YOUTUBE_API_KEY')
 const YT_API = 'https://www.googleapis.com/youtube/v3/videos'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 // Soporta youtube.com/watch?v=, youtu.be/, youtube.com/shorts/ y /embed/
 function extractVideoId(url: string): string | null {
   if (!url) return null
@@ -40,8 +45,10 @@ function extractVideoId(url: string): string | null {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+
   if (!YT_API_KEY) {
-    return new Response(JSON.stringify({ ok: false, error: 'Falta el secret YOUTUBE_API_KEY en el proyecto de Supabase' }), { status: 500 })
+    return new Response(JSON.stringify({ ok: false, error: 'Falta el secret YOUTUBE_API_KEY en el proyecto de Supabase' }), { status: 500, headers: corsHeaders })
   }
 
   let clientId: string | null = null
@@ -53,7 +60,7 @@ Deno.serve(async (req) => {
   let query = supabase.from('videos_externos').select('*')
   if (clientId) query = query.eq('client_id', clientId)
   const { data: videos, error } = await query
-  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
 
   const withId = (videos || [])
     .map(v => ({ v, videoId: extractVideoId(v.video_url) }))
@@ -61,7 +68,7 @@ Deno.serve(async (req) => {
 
   if (!withId.length) {
     return new Response(JSON.stringify({ ok: true, updated: 0, message: 'No hay videos con link de YouTube reconocible' }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 
@@ -101,6 +108,6 @@ Deno.serve(async (req) => {
   }
 
   return new Response(JSON.stringify({ ok: true, updated, results }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 })

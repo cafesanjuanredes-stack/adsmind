@@ -31,6 +31,11 @@ const GRAPH = 'https://graph.facebook.com/v21.0'
 const MAX_PAGES = 4       // ~50 posts x 4 páginas = hasta 200 posts por corrida
 const PAGE_SIZE = 50
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 async function graphGet(url: string, params?: Record<string, string>) {
   const full = params ? `${url}?${new URLSearchParams(params)}` : url
   const res = await fetch(full)
@@ -70,6 +75,8 @@ async function fetchInsights(mediaId: string, tipo: string, accessToken: string)
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+
   let clientId: string | null = null
   try {
     const body = await req.json()
@@ -79,7 +86,7 @@ Deno.serve(async (req) => {
   let query = supabase.from('meta_accounts').select('*').eq('status', 'active')
   if (clientId) query = query.eq('client_id', clientId)
   const { data: accounts, error } = await query
-  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
 
   const results: unknown[] = []
 
@@ -154,6 +161,6 @@ Deno.serve(async (req) => {
   }
 
   return new Response(JSON.stringify({ ok: true, results }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 })
