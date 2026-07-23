@@ -47,8 +47,13 @@ export async function updatePiezaEstado(id, estado, extra = {}) {
 }
 
 export async function deletePieza(pieza) {
-  const { error: storageError } = await supabase.storage.from('content').remove([pieza.storage_path])
-  if (storageError) throw storageError
+  // Las piezas importadas de Instagram (imported=true) no tienen archivo
+  // propio en storage — solo el link externo de la miniatura — así que no
+  // hay nada que borrar del bucket.
+  if (pieza.storage_path) {
+    const { error: storageError } = await supabase.storage.from('content').remove([pieza.storage_path])
+    if (storageError) throw storageError
+  }
   const { error } = await supabase.from('piezas').delete().eq('id', pieza.id)
   if (error) throw error
 }

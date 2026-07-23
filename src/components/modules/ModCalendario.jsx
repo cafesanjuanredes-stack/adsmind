@@ -6,8 +6,10 @@ import { getSignedUrl } from '../../lib/storage'
 import { listVideos, createVideo, updateVideo, deleteVideo } from '../../lib/videosExternos'
 import { listContentTasks, createContentTask, updateContentTask, toggleContentTaskDone, deleteContentTask } from '../../lib/contentTasks'
 import { getContentGoal, saveContentGoal } from '../../lib/contentGoals'
+import { listTrips, createTrip, updateTrip, deleteTrip } from '../../lib/trips'
+import { getLatestMetrica, createMetrica, importExistingPosts } from '../../lib/metricas'
 import { getUpcomingFindeLargo, getEfemerideFor } from '../../data/efemerides'
-import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play, AlertTriangle, Check, Calendar as CalIcon, Rows3, Images, Film, Clapperboard, PartyPopper, Megaphone, Trash2, ClipboardList } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play, AlertTriangle, Check, Calendar as CalIcon, Rows3, Images, Film, Clapperboard, PartyPopper, Megaphone, Trash2, ClipboardList, Plane, DownloadCloud } from 'lucide-react'
 
 const DIA_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const TIPO_META = {
@@ -30,6 +32,14 @@ function dayKey(d) {
 function toEsDate(isoDate) {
   const [y, m, d] = isoDate.split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+}
+
+// Suma días a una fecha plana 'YYYY-MM-DD' y devuelve otra fecha plana.
+function addDaysISO(isoDate, n) {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + n)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 
 // scheduled_for se guarda en UTC — hay que convertirlo a la hora local
@@ -96,8 +106,8 @@ function ItemThumb({ item, thumbs, size, onClick, onDragStart, onDragEnd }) {
         opacity: isDone ? 0.55 : 1,
       }}
     >
-      {img
-        ? <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
+      {(img || (item.kind === 'pieza' && item.data.external_image_url))
+        ? <img src={img || item.data.external_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
         : (
           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: meta.color + '18' }}>
             <meta.icon size={Math.round(size * 0.4)} color={meta.color} />
@@ -140,19 +150,30 @@ export function ModCalendario({ client, notify }) {
   const [editTime, setEditTime] = useState('')
   const [savingEdit, setSavingEdit] = useState(false)
 
+  const [metricaDraft, setMetricaDraft] = useState({ reach: '', likes: '', comments: '', saves: '', plays: '' })
+  const [savingMetrica, setSavingMetrica] = useState(false)
+
   const [goalItems, setGoalItems] = useState([])
   const [goalLoading, setGoalLoading] = useState(true)
   const [newGoalItem, setNewGoalItem] = useState({ label: '', tipo: '', qtyTarget: '' })
+
+  const [trips, setTrips] = useState([])
+  const [newTrip, setNewTrip] = useState({ title: '', startDate: '', endDate: '', notes: '' })
+  const [savingTrip, setSavingTrip] = useState(false)
+  const [tripItemDrafts, setTripItemDrafts] = useState({}) // { [tripId]: { label, tipo, qtyTarget } }
+
+  const [importing, setImporting] = useState(false)
 
   const monthStr = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [p, v, t] = await Promise.all([listPiezas(client.id), listVideos(client.id), listContentTasks(client.id)])
+      const [p, v, t, tr] = await Promise.all([listPiezas(client.id), listVideos(client.id), listContentTasks(client.id), listTrips(client.id)])
       setPiezas(p)
       setVideos(v)
       setTasks(t)
+      setTrips(tr)
     } catch (err) {
       notify('Error cargando calendario: ' + err.message)
     } finally {
@@ -241,6 +262,14 @@ export function ModCalendario({ client, notify }) {
   const upcomingFinde = getUpcomingFindeLargo()
   const pendingTasks = tasks.filter(t => !t.done).sort((a, b) => a.due_date.localeCompare(b.due_date))
 
+  const todayKey = dayKey(new Date())
+  const tripForDay = (key) => trips.find(t => key >= t.start_date && key <= t.end_date)
+  const activeTrip = trips.find(t => todayKey >= t.start_date && todayKey <= t.end_date)
+  const upcomingTrip = !activeTrip
+    ? trips.filter(t => t.start_date > todayKey).sort((a, b) => a.start_date.localeCompare(b.start_date))[0]
+    : null
+  const highlightTrip = activeTrip || (upcomingTrip && upcomingTrip.start_date <= addDaysISO(todayKey, 10) ? upcomingTrip : null)
+
   const monthLabel = month.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
   const weekDays = buildWeekGrid(weekAnchor)
   const weekLabel = `${weekDays[0].toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} – ${weekDays[6].toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}`
@@ -272,12 +301,54 @@ export function ModCalendario({ client, notify }) {
   // ── Editar fecha/hora de algo ya programado ───────────────────────
   const openEdit = (kind, data) => {
     setEditingItem({ kind, data })
+    setMetricaDraft({ reach: '', likes: '', comments: '', saves: '', plays: '' })
     if (kind === 'task') {
       setEditDate(data.due_date ? data.due_date.slice(0, 10) : dayKey(new Date()))
       setEditTime('')
     } else {
       setEditDate(data.scheduled_for ? localDateStr(data.scheduled_for) : dayKey(new Date()))
       setEditTime(data.scheduled_for ? localTimeStr(data.scheduled_for) : '10:00')
+    }
+    if (kind === 'pieza' && data.estado === 'publicada') {
+      getLatestMetrica(data.id).then(m => {
+        if (m) setMetricaDraft({ reach: m.reach ?? '', likes: m.likes ?? '', comments: m.comments ?? '', saves: m.saves ?? '', plays: m.plays ?? '' })
+      }).catch(() => {})
+    }
+  }
+
+  const handleSaveMetrica = async () => {
+    if (!editingItem) return
+    setSavingMetrica(true)
+    try {
+      await createMetrica({
+        piezaId: editingItem.data.id,
+        reach: +metricaDraft.reach || 0,
+        likes: +metricaDraft.likes || 0,
+        comments: +metricaDraft.comments || 0,
+        saves: +metricaDraft.saves || 0,
+        plays: +metricaDraft.plays || 0,
+      })
+      notify('Métricas guardadas')
+    } catch (err) {
+      notify('Error guardando métricas: ' + err.message)
+    } finally {
+      setSavingMetrica(false)
+    }
+  }
+
+  const handleImportExisting = async () => {
+    setImporting(true)
+    try {
+      const results = await importExistingPosts(client.id)
+      const mine = results.find(r => r.client_id === client.id) || results[0]
+      if (mine?.ok === false) throw new Error(mine.error)
+      const n = mine?.imported ?? 0
+      notify(n > 0 ? `Se importaron ${n} publicaciones con sus métricas` : 'No hay publicaciones nuevas para importar')
+      load()
+    } catch (err) {
+      notify('Error importando: ' + err.message)
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -391,6 +462,87 @@ export function ModCalendario({ client, notify }) {
     }
   }
 
+  // ── Viajes ────────────────────────────────────────────────────────
+  const handleCreateTrip = async () => {
+    if (!newTrip.title || !newTrip.startDate || !newTrip.endDate) return
+    setSavingTrip(true)
+    try {
+      await createTrip({
+        clientId: client.id,
+        title: newTrip.title,
+        startDate: newTrip.startDate,
+        endDate: newTrip.endDate,
+        notes: newTrip.notes,
+      })
+      setNewTrip({ title: '', startDate: '', endDate: '', notes: '' })
+      notify('Viaje agregado')
+      load()
+    } catch (err) {
+      notify('Error: ' + err.message)
+    } finally {
+      setSavingTrip(false)
+    }
+  }
+
+  const handleDeleteTrip = async (trip) => {
+    try {
+      await deleteTrip(trip.id)
+      notify('Viaje eliminado')
+      load()
+    } catch (err) {
+      notify('Error: ' + err.message)
+    }
+  }
+
+  const setTripDraft = (tripId, patch) =>
+    setTripItemDrafts(d => ({ ...d, [tripId]: { label: '', tipo: '', qtyTarget: '', ...d[tripId], ...patch } }))
+
+  const handleAddTripItem = async (trip) => {
+    const draft = tripItemDrafts[trip.id]
+    if (!draft?.label) return
+    const item = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      label: draft.label,
+      tipo: draft.tipo || null,
+      qty_target: draft.tipo ? (+draft.qtyTarget || 0) : 0,
+      done: false,
+    }
+    try {
+      await updateTrip(trip.id, { items: [...(trip.items || []), item] })
+      setTripItemDrafts(d => ({ ...d, [trip.id]: { label: '', tipo: '', qtyTarget: '' } }))
+      load()
+    } catch (err) {
+      notify('Error: ' + err.message)
+    }
+  }
+
+  const handleToggleTripItem = async (trip, itemId) => {
+    try {
+      await updateTrip(trip.id, {
+        items: (trip.items || []).map(it => it.id === itemId ? { ...it, done: !it.done } : it),
+      })
+      load()
+    } catch (err) {
+      notify('Error: ' + err.message)
+    }
+  }
+
+  const handleDeleteTripItem = async (trip, itemId) => {
+    try {
+      await updateTrip(trip.id, { items: (trip.items || []).filter(it => it.id !== itemId) })
+      load()
+    } catch (err) {
+      notify('Error: ' + err.message)
+    }
+  }
+
+  // Progreso de un item de viaje: cuenta piezas de ese tipo creadas dentro
+  // del rango de fechas del viaje (igual criterio que el plan mensual).
+  const tripItemProgress = (trip, item) => {
+    if (!item.tipo) return null
+    return piezas.filter(p => p.tipo === item.tipo && p.created_at && p.created_at.slice(0, 10) >= trip.start_date && p.created_at.slice(0, 10) <= trip.end_date).length
+  }
+
   // ── Arrastrar y soltar: reprogramar a otro día ─────────────────────
   const startDrag = (kind, data) => (e) => {
     const defaultTime = data.scheduled_for ? localTimeStr(data.scheduled_for) : '10:00'
@@ -435,6 +587,11 @@ export function ModCalendario({ client, notify }) {
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <SLabel accent={client.color}>Calendario — {client.name}</SLabel>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Btn size="sm" variant="ghost" onClick={handleImportExisting} disabled={importing}
+          style={{ display: 'flex', alignItems: 'center', gap: 5 }} title="Trae de Instagram los posts/reels/carruseles ya publicados y les carga el primer snapshot de métricas (reach, likes, comments, etc.)">
+          <DownloadCloud size={12} /> {importing ? 'Importando…' : 'Importar publicaciones de Instagram'}
+        </Btn>
         <div style={{ display: 'flex', gap: 4, background: T.surf, borderRadius: RADIUS.pill, padding: 3 }}>
           <button onClick={() => setView('mes')} style={{
             display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: RADIUS.pill,
@@ -449,6 +606,7 @@ export function ModCalendario({ client, notify }) {
             boxShadow: view === 'semana' ? SHADOW.xs : 'none',
           }}><Rows3 size={13} /> Semana</button>
         </div>
+        </div>
       </div>
 
       {upcomingFinde && (
@@ -461,6 +619,20 @@ export function ModCalendario({ client, notify }) {
             <strong>Se viene un fin de semana largo:</strong> {upcomingFinde.motivos.join(' + ')}
             {' '}({toEsDate(upcomingFinde.start)} al {toEsDate(upcomingFinde.end)}, {upcomingFinde.days} días).
             {' '}Es buen momento para generar contenido antes.
+          </div>
+        </div>
+      )}
+
+      {highlightTrip && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, background: T.blue + '14',
+          border: `1px solid ${T.blue}40`, borderRadius: RADIUS.sm, padding: '10px 14px',
+        }}>
+          <Plane size={16} color={T.blue} style={{ flexShrink: 0 }} />
+          <div style={{ fontSize: 11.5, color: T.text, lineHeight: 1.5 }}>
+            <strong>{activeTrip ? 'Viaje en curso:' : 'Viaje próximo:'}</strong> {highlightTrip.title}
+            {' '}({toEsDate(highlightTrip.start_date)} al {toEsDate(highlightTrip.end_date)}).
+            {' '}{activeTrip ? 'Aprovechá para filmar todo lo que puedas.' : 'Preparate: revisá qué hay que generar en la sección Viajes.'}
           </div>
         </div>
       )}
@@ -562,14 +734,16 @@ export function ModCalendario({ client, notify }) {
                   const isToday = key === dayKey(new Date())
                   const isOver = dragOverKey === key
                   const efem = getEfemerideFor(key)
+                  const dayTrip = tripForDay(key)
                   return (
                     <div key={key} {...dayCellProps(date)} style={{
                       minHeight: 96, borderRadius: RADIUS.sm - 2, padding: 6,
-                      background: isOver ? T.primary + '12' : inMonth ? T.surf : 'transparent',
+                      background: isOver ? T.primary + '12' : dayTrip ? T.blue + '0C' : inMonth ? T.surf : 'transparent',
                       border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : T.border}`,
+                      borderTop: dayTrip ? `3px solid ${T.blue}` : undefined,
                       opacity: inMonth ? 1 : 0.35,
                       transition: 'background .12s, border-color .12s',
-                    }}>
+                    }} title={dayTrip ? `Viaje: ${dayTrip.title}` : undefined}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 3, marginBottom: 3 }}>
                         <div style={{ fontSize: 10, color: isToday ? T.primary : T.dim, fontWeight: isToday ? 800 : 600 }}>
                           {date.getDate()}
@@ -614,14 +788,16 @@ export function ModCalendario({ client, notify }) {
                 const isToday = key === dayKey(new Date())
                 const isOver = dragOverKey === key
                 const efem = getEfemerideFor(key)
+                const dayTrip = tripForDay(key)
                 return (
                   <div key={key} {...dayCellProps(date)} style={{
                     minHeight: 220, borderRadius: RADIUS.sm - 2, padding: 8,
-                    background: isOver ? T.primary + '12' : T.surf,
+                    background: isOver ? T.primary + '12' : dayTrip ? T.blue + '0C' : T.surf,
                     border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : T.border}`,
+                    borderTop: dayTrip ? `3px solid ${T.blue}` : undefined,
                     display: 'flex', flexDirection: 'column', gap: 8,
                     transition: 'background .12s, border-color .12s',
-                  }}>
+                  }} title={dayTrip ? `Viaje: ${dayTrip.title}` : undefined}>
                     <div>
                       <div style={{ fontSize: 9, color: T.dim, fontWeight: 700, textTransform: 'uppercase' }}>{DIA_LABELS[(date.getDay() + 6) % 7]}</div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: isToday ? T.primary : T.text }}>{date.getDate()}</div>
@@ -717,6 +893,47 @@ export function ModCalendario({ client, notify }) {
                 )}
                 <Btn size="sm" variant="ghost" onClick={closeEdit}>Cancelar</Btn>
               </div>
+
+              {editingItem.kind === 'pieza' && editingItem.data.estado === 'publicada' && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                  <div style={{ fontSize: 10, color: T.dim, marginBottom: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Cargar métricas a mano
+                  </div>
+                  <div style={{ fontSize: 9, color: T.dim, marginBottom: 8, marginTop: -4 }}>
+                    Para clientes sin conexión de Meta activa (llega solo cuando sí la tienen).
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.dim, marginBottom: 2 }}>Alcance</div>
+                      <input type="number" min="0" value={metricaDraft.reach} onChange={e => setMetricaDraft(d => ({ ...d, reach: e.target.value }))}
+                        style={{ width: '100%', fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '6px 8px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.dim, marginBottom: 2 }}>Likes</div>
+                      <input type="number" min="0" value={metricaDraft.likes} onChange={e => setMetricaDraft(d => ({ ...d, likes: e.target.value }))}
+                        style={{ width: '100%', fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '6px 8px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.dim, marginBottom: 2 }}>Comentarios</div>
+                      <input type="number" min="0" value={metricaDraft.comments} onChange={e => setMetricaDraft(d => ({ ...d, comments: e.target.value }))}
+                        style={{ width: '100%', fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '6px 8px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 9, color: T.dim, marginBottom: 2 }}>Guardados</div>
+                      <input type="number" min="0" value={metricaDraft.saves} onChange={e => setMetricaDraft(d => ({ ...d, saves: e.target.value }))}
+                        style={{ width: '100%', fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '6px 8px', boxSizing: 'border-box' }} />
+                    </div>
+                    {(editingItem.data.tipo === 'reel' || editingItem.data.tipo === 'historia') && (
+                      <div>
+                        <div style={{ fontSize: 9, color: T.dim, marginBottom: 2 }}>Reproducciones</div>
+                        <input type="number" min="0" value={metricaDraft.plays} onChange={e => setMetricaDraft(d => ({ ...d, plays: e.target.value }))}
+                          style={{ width: '100%', fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '6px 8px', boxSizing: 'border-box' }} />
+                      </div>
+                    )}
+                  </div>
+                  <Btn size="sm" onClick={handleSaveMetrica} disabled={savingMetrica}>{savingMetrica ? 'Guardando…' : 'Guardar métricas'}</Btn>
+                </div>
+              )}
             </Card>
           )}
 
@@ -774,6 +991,92 @@ export function ModCalendario({ client, notify }) {
               })}
               {!loading && !pendingTasks.length && (
                 <div style={{ fontSize: 11, color: T.dim }}>Sin pendientes — todo al día.</div>
+              )}
+            </div>
+          </Card>
+
+          <Card>
+            <SLabel><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plane size={12} /> Viajes</span></SLabel>
+            <div style={{ fontSize: 9, color: T.dim, marginBottom: 8, marginTop: -6 }}>
+              Rango de fechas del viaje + qué se necesita generar ahí.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+              <Input value={newTrip.title} onChange={e => setNewTrip(v => ({ ...v, title: e.target.value }))} placeholder="Destino / nombre del viaje" />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="date" value={newTrip.startDate} onChange={e => setNewTrip(v => ({ ...v, startDate: e.target.value }))}
+                  style={{ flex: 1, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '8px 10px' }}
+                />
+                <input
+                  type="date" value={newTrip.endDate} onChange={e => setNewTrip(v => ({ ...v, endDate: e.target.value }))}
+                  style={{ flex: 1, fontSize: 12, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2, color: T.text, padding: '8px 10px' }}
+                />
+              </div>
+              <Btn size="sm" onClick={handleCreateTrip} disabled={!newTrip.title || !newTrip.startDate || !newTrip.endDate || savingTrip}>
+                {savingTrip ? 'Guardando…' : 'Agregar viaje'}
+              </Btn>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 380, overflowY: 'auto' }}>
+              {trips.map(trip => {
+                const draft = tripItemDrafts[trip.id] || { label: '', tipo: '', qtyTarget: '' }
+                return (
+                  <div key={trip.id} style={{ background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6, marginBottom: 6 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 700, color: T.text }}>{trip.title}</div>
+                        <div style={{ fontSize: 9, color: T.dim }}>{toEsDate(trip.start_date)} al {toEsDate(trip.end_date)}</div>
+                      </div>
+                      <span onClick={() => handleDeleteTrip(trip)} style={{ cursor: 'pointer', color: T.dim, display: 'flex', flexShrink: 0 }}><Trash2 size={12} /></span>
+                    </div>
+
+                    {(trip.items || []).map(item => {
+                      const progress = tripItemProgress(trip, item)
+                      const isDone = progress !== null ? progress >= item.qty_target && item.qty_target > 0 : item.done
+                      return (
+                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                          {progress === null ? (
+                            <span onClick={() => handleToggleTripItem(trip, item.id)} style={{
+                              width: 15, height: 15, borderRadius: 4, flexShrink: 0, cursor: 'pointer',
+                              border: `1.5px solid ${isDone ? T.active : T.border2}`, background: isDone ? T.active : 'transparent',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>{isDone && <Check size={10} color="#fff" />}</span>
+                          ) : (
+                            <span style={{
+                              fontSize: 9, fontWeight: 800, flexShrink: 0, minWidth: 34, textAlign: 'center',
+                              padding: '2px 5px', borderRadius: RADIUS.pill,
+                              color: isDone ? T.active : T.warn, background: (isDone ? T.active : T.warn) + '18',
+                            }}>{progress}/{item.qty_target}</span>
+                          )}
+                          <span style={{ flex: 1, fontSize: 10.5, color: T.text, textDecoration: isDone ? 'line-through' : 'none', opacity: isDone ? 0.6 : 1 }}>
+                            {item.label}
+                          </span>
+                          <span onClick={() => handleDeleteTripItem(trip, item.id)} style={{ cursor: 'pointer', color: T.dim, display: 'flex' }}><X size={11} /></span>
+                        </div>
+                      )
+                    })}
+
+                    <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+                      <Input value={draft.label} onChange={e => setTripDraft(trip.id, { label: e.target.value })} placeholder="Ej: 4 reels" style={{ flex: 1, fontSize: 10.5, padding: '6px 8px' }} />
+                      <Sel
+                        value={draft.tipo}
+                        onChange={e => setTripDraft(trip.id, { tipo: e.target.value })}
+                        style={{ width: 90, fontSize: 10, padding: '6px 4px' }}
+                        options={[{ v: '', l: 'Manual' }, ...Object.entries(TIPO_META).filter(([k]) => k !== 'video').map(([k, m]) => ({ v: k, l: m.label }))]}
+                      />
+                      {draft.tipo && (
+                        <input
+                          type="number" min="0" value={draft.qtyTarget} onChange={e => setTripDraft(trip.id, { qtyTarget: e.target.value })}
+                          placeholder="#" style={{ width: 40, fontSize: 10.5, background: T.card, border: `1px solid ${T.border2}`, borderRadius: 6, color: T.text, padding: '6px 4px' }}
+                        />
+                      )}
+                      <Btn size="sm" onClick={() => handleAddTripItem(trip)} disabled={!draft.label} style={{ padding: '5px 8px' }}>+</Btn>
+                    </div>
+                  </div>
+                )
+              })}
+              {!loading && !trips.length && (
+                <div style={{ fontSize: 11, color: T.dim }}>Sin viajes cargados todavía.</div>
               )}
             </div>
           </Card>

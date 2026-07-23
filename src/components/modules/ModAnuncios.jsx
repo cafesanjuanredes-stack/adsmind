@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Card, SLabel, Btn, Input, Sel, MetricBig } from '../ui'
 import { T, PLATFORM_META } from '../../tokens'
 import { fmtNum } from '../../utils/format'
-import { listAds, createAd, deleteAd } from '../../lib/ads'
-import { Plus, X, DollarSign, Eye, MousePointerClick, Target, Search } from 'lucide-react'
+import { listAds, createAd, updateAd, deleteAd } from '../../lib/ads'
+import { Plus, X, DollarSign, Eye, MousePointerClick, Target, Search, Pencil, Check } from 'lucide-react'
 
 // Canales de pauta — no es lo mismo que PLATFORM_META (redes orgánicas):
 // acá sumamos Google Ads, que no es una red donde se publica contenido.
@@ -27,6 +27,9 @@ export function ModAnuncios({ client, notify }) {
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [editingAd, setEditingAd] = useState(null)
+  const [editForm, setEditForm] = useState(null)
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -76,6 +79,49 @@ export function ModAnuncios({ client, notify }) {
       load()
     } catch (err) {
       notify('Error: ' + err.message)
+    }
+  }
+
+  const openEditAd = (ad) => {
+    setEditingAd(ad.id)
+    setEditForm({
+      objective: ad.objective || '',
+      startDate: ad.start_date || '',
+      endDate: ad.end_date || '',
+      spend: ad.spend ?? '',
+      reach: ad.reach ?? '',
+      clicks: ad.clicks ?? '',
+      conversions: ad.conversions ?? '',
+      notes: ad.notes || '',
+    })
+  }
+
+  const cancelEditAd = () => {
+    setEditingAd(null)
+    setEditForm(null)
+  }
+
+  const saveEditAd = async () => {
+    if (!editingAd || !editForm) return
+    setSavingEdit(true)
+    try {
+      await updateAd(editingAd, {
+        objective: editForm.objective,
+        start_date: editForm.startDate || null,
+        end_date: editForm.endDate || null,
+        spend: +editForm.spend || 0,
+        reach: +editForm.reach || 0,
+        clicks: +editForm.clicks || 0,
+        conversions: +editForm.conversions || 0,
+        notes: editForm.notes,
+      })
+      notify('Campaña actualizada')
+      cancelEditAd()
+      load()
+    } catch (err) {
+      notify('Error actualizando: ' + err.message)
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -166,6 +212,38 @@ export function ModAnuncios({ client, notify }) {
                 const cpm = a.reach ? (a.spend / a.reach) * 1000 : 0
                 const ctr = a.reach ? (a.clicks / a.reach) * 100 : 0
                 const cpa = a.conversions ? a.spend / a.conversions : 0
+                const isEditing = editingAd === a.id
+                const cellStyle = { padding: '10px', borderBottom: `1px solid ${T.border}` }
+                const miniInput = { width: '100%', fontSize: 11, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 6, color: T.text, padding: '5px 6px', boxSizing: 'border-box' }
+
+                if (isEditing) {
+                  return (
+                    <tr key={a.id} style={{ background: T.surf2 }}>
+                      <td style={cellStyle}>
+                        {a.name}
+                        <input style={{ ...miniInput, marginTop: 4 }} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas…" />
+                      </td>
+                      <td style={cellStyle}>
+                        {meta && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, color: meta.color, fontWeight: 700 }}><meta.icon size={11} /> {meta.short}</span>}
+                      </td>
+                      <td style={cellStyle}><input style={miniInput} value={editForm.objective} onChange={e => setEditForm(f => ({ ...f, objective: e.target.value }))} /></td>
+                      <td style={cellStyle}><input style={miniInput} value={editForm.spend} onChange={e => setEditForm(f => ({ ...f, spend: e.target.value }))} /></td>
+                      <td style={cellStyle}><input style={miniInput} value={editForm.reach} onChange={e => setEditForm(f => ({ ...f, reach: e.target.value }))} /></td>
+                      <td style={{ ...cellStyle, color: T.dim }}>{money(cpm)}</td>
+                      <td style={cellStyle}><input style={miniInput} value={editForm.clicks} onChange={e => setEditForm(f => ({ ...f, clicks: e.target.value }))} /></td>
+                      <td style={{ ...cellStyle, color: T.dim }}>{ctr.toFixed(2)}%</td>
+                      <td style={cellStyle}><input style={miniInput} value={editForm.conversions} onChange={e => setEditForm(f => ({ ...f, conversions: e.target.value }))} /></td>
+                      <td style={{ ...cellStyle, color: T.dim }}>{a.conversions ? money(cpa) : '—'}</td>
+                      <td style={cellStyle}>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <Btn size="sm" onClick={saveEditAd} disabled={savingEdit}><Check size={12} /></Btn>
+                          <Btn size="sm" variant="ghost" onClick={cancelEditAd}><X size={12} /></Btn>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                }
+
                 return (
                   <tr key={a.id} style={{ background: i % 2 === 0 ? T.surf + '40' : 'transparent' }}>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${T.border}`, color: T.text }}>
@@ -184,7 +262,10 @@ export function ModAnuncios({ client, notify }) {
                     <td style={{ padding: '10px', borderBottom: `1px solid ${T.border}`, color: T.text }}>{fmtNum(a.conversions)}</td>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${T.border}`, color: T.dim }}>{a.conversions ? money(cpa) : '—'}</td>
                     <td style={{ padding: '10px', borderBottom: `1px solid ${T.border}` }}>
-                      <Btn size="sm" variant="danger" onClick={() => del(a)}><X size={12} /></Btn>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <Btn size="sm" variant="ghost" onClick={() => openEditAd(a)}><Pencil size={12} /></Btn>
+                        <Btn size="sm" variant="danger" onClick={() => del(a)}><X size={12} /></Btn>
+                      </div>
                     </td>
                   </tr>
                 )
