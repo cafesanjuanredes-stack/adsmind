@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, SLabel, Btn, Input, Sel } from '../ui'
 import { T, RADIUS, SHADOW, PLATFORM_META } from '../../tokens'
+import { fmtNum } from '../../utils/format'
 import { listPiezas, updatePiezaEstado } from '../../lib/piezas'
 import { getSignedUrl } from '../../lib/storage'
-import { listVideos, createVideo, updateVideo, deleteVideo } from '../../lib/videosExternos'
+import { listVideos, createVideo, updateVideo, deleteVideo, syncYoutubeStats } from '../../lib/videosExternos'
 import { listContentTasks, createContentTask, updateContentTask, toggleContentTaskDone, deleteContentTask } from '../../lib/contentTasks'
 import { getContentGoal, saveContentGoal } from '../../lib/contentGoals'
 import { listTrips, createTrip, updateTrip, deleteTrip } from '../../lib/trips'
@@ -139,6 +140,7 @@ export function ModCalendario({ client, notify }) {
 
   const [newVideo, setNewVideo] = useState({ titulo: '', videoUrl: '', scheduledFor: '', scheduledTime: '10:00' })
   const [savingVideo, setSavingVideo] = useState(false)
+  const [syncingYoutube, setSyncingYoutube] = useState(false)
   const [scheduleDates, setScheduleDates] = useState({}) // { [piezaId]: 'YYYY-MM-DD' }
   const [scheduleTimes, setScheduleTimes] = useState({}) // { [piezaId]: 'HH:MM' }
 
@@ -333,6 +335,19 @@ export function ModCalendario({ client, notify }) {
       notify('Error guardando métricas: ' + err.message)
     } finally {
       setSavingMetrica(false)
+    }
+  }
+
+  const handleSyncYoutube = async () => {
+    setSyncingYoutube(true)
+    try {
+      const res = await syncYoutubeStats(client.id)
+      notify(res.updated > 0 ? `Se actualizaron ${res.updated} video(s) de YouTube` : (res.message || 'No hay videos de YouTube para sincronizar'))
+      load()
+    } catch (err) {
+      notify('Error sincronizando YouTube: ' + err.message)
+    } finally {
+      setSyncingYoutube(false)
     }
   }
 
@@ -1143,13 +1158,26 @@ export function ModCalendario({ client, notify }) {
 
           {videos.length > 0 && (
             <Card>
-              <SLabel>Videos externos — {client.name}</SLabel>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: -4 }}>
+                <SLabel>Videos externos — {client.name}</SLabel>
+                <Btn size="sm" variant="ghost" onClick={handleSyncYoutube} disabled={syncingYoutube}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5 }} title="Trae views/likes/comentarios reales de YouTube para los links reconocidos">
+                  <DownloadCloud size={11} /> {syncingYoutube ? 'Sincronizando…' : 'Sincronizar YouTube'}
+                </Btn>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
                 {videos.map(v => (
                   <div key={v.id} style={{ display: 'flex', gap: 6, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
                       <div style={{ fontSize: 9, color: T.dim }}>{v.scheduled_for ? v.scheduled_for.slice(0, 10) : 'sin fecha'} · {v.estado}</div>
+                      {v.views != null && (
+                        <div style={{ fontSize: 9.5, color: T.sub, marginTop: 2, display: 'flex', gap: 8 }}>
+                          <span>{fmtNum(v.views)} views</span>
+                          {v.likes != null && <span>{fmtNum(v.likes)} likes</span>}
+                          {v.comments != null && <span>{fmtNum(v.comments)} coment.</span>}
+                        </div>
+                      )}
                     </div>
                     <span onClick={() => handleDeleteVideo(v)} style={{ cursor: 'pointer', color: T.dim, display: 'flex' }}><X size={13} /></span>
                   </div>

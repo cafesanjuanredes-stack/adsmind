@@ -32,3 +32,15 @@ export async function deleteVideo(id) {
   const { error } = await supabase.from('videos_externos').delete().eq('id', id)
   if (error) throw error
 }
+
+// Trae views/likes/comments reales de YouTube para los videos externos del
+// cliente que tengan un link de YouTube reconocible. Requiere la Edge
+// Function "sync-youtube-stats" deployada y el secret YOUTUBE_API_KEY.
+export async function syncYoutubeStats(clientId) {
+  const { data, error } = await supabase.functions.invoke('sync-youtube-stats', {
+    body: { client_id: clientId },
+  })
+  if (error) throw error
+  if (!data?.ok) throw new Error(data?.error || 'No se pudo sincronizar')
+  return data
+}
