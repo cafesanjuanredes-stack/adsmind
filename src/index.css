@@ -5,10 +5,11 @@
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }
 
 body {
-  background: #F5F1EA;
-  color: #171310;
+  background: #F9FAFB;
+  color: #16181D;
   font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
+  letter-spacing: -0.01em;
 }
 
 #root { min-height: 100vh; }
@@ -16,8 +17,8 @@ body {
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #D4CCBC; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #BDB3A0; }
+::-webkit-scrollbar-thumb { background: #DEE2E6; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #C1C8D0; }
 
 /* ── Animations ── */
 @keyframes pulse-active {

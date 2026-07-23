@@ -6,7 +6,7 @@ export function Card({ children, accent, style: extra }) {
       background: T.card,
       border: `1px solid ${T.border}`,
       borderRadius: RADIUS.md,
-      boxShadow: SHADOW.sm,
+      boxShadow: SHADOW.xs,
       padding: 20,
       position: 'relative',
       overflow: 'hidden',
@@ -15,8 +15,8 @@ export function Card({ children, accent, style: extra }) {
     }}>
       {accent && (
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-          background: `linear-gradient(90deg,${accent},transparent)`,
+          position: 'absolute', top: 14, left: 0, width: 3, height: 18,
+          borderRadius: '0 3px 3px 0', background: accent,
         }} />
       )}
       {children}
