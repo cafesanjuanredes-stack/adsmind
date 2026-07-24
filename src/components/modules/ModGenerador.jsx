@@ -16,10 +16,41 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`
 }
 
-const DIMENSIONS = {
-  historia: { w: 1080, h: 1920, dispW: 175, dispH: 311 },
-  post:     { w: 1080, h: 1080, dispW: 240, dispH: 240 },
-  carrusel: { w: 1080, h: 1080, dispW: 240, dispH: 240 },
+// Historia es siempre vertical de pantalla completa — no tiene formato para
+// elegir. Post/carrusel/reel sí admiten distintos encuadres, como en Instagram.
+const HISTORIA_DIMS = { w: 1080, h: 1920 }
+
+const FORMATOS = {
+  post: [
+    { v: 'cuadrado',   l: 'Cuadrado · 1:1',      w: 1080, h: 1080 },
+    { v: 'vertical',   l: 'Vertical · 4:5',      w: 1080, h: 1350 },
+    { v: 'horizontal', l: 'Horizontal · 1.91:1', w: 1080, h: 566 },
+  ],
+  carrusel: [
+    { v: 'cuadrado',   l: 'Cuadrado · 1:1',      w: 1080, h: 1080 },
+    { v: 'vertical',   l: 'Vertical · 4:5',      w: 1080, h: 1350 },
+    { v: 'horizontal', l: 'Horizontal · 1.91:1', w: 1080, h: 566 },
+  ],
+  reel: [
+    { v: 'vertical', l: 'Vertical · 9:16', w: 1080, h: 1920 },
+    { v: 'cuadrado', l: 'Cuadrado · 1:1',  w: 1080, h: 1080 },
+  ],
+}
+
+function scaledDims(w, h, maxBox = 240) {
+  const dispW = w >= h ? maxBox : Math.round(maxBox * w / h)
+  const dispH = w >= h ? Math.round(maxBox * h / w) : maxBox
+  return { dispW, dispH }
+}
+
+// Devuelve { w, h, dispW, dispH } para el tipo/formato actual. Historia no
+// tiene formato (siempre vertical fijo); post/carrusel/reel usan el formato
+// elegido, con un fallback razonable si todavía no se eligió ninguno.
+function getDims(tipo, formato) {
+  if (tipo === 'historia') return { ...HISTORIA_DIMS, ...scaledDims(HISTORIA_DIMS.w, HISTORIA_DIMS.h) }
+  const opts = FORMATOS[tipo] || FORMATOS.post
+  const found = opts.find(o => o.v === formato) || opts[0]
+  return { w: found.w, h: found.h, ...scaledDims(found.w, found.h) }
 }
 
 const TIPO_OPTIONS = [
@@ -148,6 +179,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
   const [stickerScale, setStickerScale] = useState(0.22)
 
   const [tipo,        setTipo]        = useState('historia')
+  const [formato,     setFormato]     = useState(null) // null para historia (no aplica)
   const [overlayText, setOverlayText] = useState('')
   const [caption,     setCaption]     = useState('')
   const [tags,        setTags]        = useState('')
@@ -283,17 +315,22 @@ export function ModGenerador({ client, notify, updateBrand }) {
   useEffect(() => {
     draw()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipo, overlayText, textPos, fontSize, textColor, bgColor, bgBar, resolvedFont, stickerPos, stickerScale])
+  }, [tipo, formato, overlayText, textPos, fontSize, textColor, bgColor, bgBar, resolvedFont, stickerPos, stickerScale])
 
   // ── Carrusel necesita varias fotos: forzar modo lote ──────────────
   useEffect(() => {
     if (tipo === 'carrusel') setBatchMode(true)
   }, [tipo])
 
+  // ── al cambiar de tipo: resetear el formato a la primera opción válida ──
+  useEffect(() => {
+    setFormato(tipo === 'historia' ? null : (FORMATOS[tipo] || FORMATOS.post)[0].v)
+  }, [tipo])
+
   function draw() {
     const canvas = canvasRef.current
     if (!canvas) return
-    const { w, h } = DIMENSIONS[tipo] || DIMENSIONS.post
+    const { w, h } = getDims(tipo, formato)
     canvas.width = w
     canvas.height = h
     const ctx = canvas.getContext('2d')
@@ -340,7 +377,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
   function handleCanvasMove(e) {
     if (!dragRef.current) return
     const pt = canvasPoint(e)
-    const { w, h } = DIMENSIONS[tipo] || DIMENSIONS.post
+    const { w, h } = getDims(tipo, formato)
     if (dragRef.current.type === 'sticker') {
       setStickerPos({ x: clamp(pt.x / w, 0.05, 0.95), y: clamp(pt.y / h, 0.05, 0.95) })
     } else {
@@ -414,7 +451,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
 
     setSaving(true)
     try {
-      const { w, h } = DIMENSIONS[tipo] || DIMENSIONS.post
+      const { w, h } = getDims(tipo, formato)
       const offscreen = document.createElement('canvas')
       offscreen.width = w
       offscreen.height = h
@@ -438,6 +475,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
           client_id: client.id,
           source_asset_id: targets[0].id,
           tipo: 'carrusel',
+          formato,
           storage_path: renderedPaths[0],
           carousel_paths: renderedPaths.slice(1),
           overlay_text: overlayText || null,
@@ -453,6 +491,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
             client_id: client.id,
             source_asset_id: targets[i].id,
             tipo,
+            formato: tipo === 'historia' ? null : formato,
             storage_path: renderedPaths[i],
             overlay_text: overlayText || null,
             caption: tipo === 'post' ? (caption || null) : null,
@@ -485,6 +524,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
       const pieza = await createPieza({
         client_id: client.id,
         tipo: 'reel',
+        formato,
         storage_path: path,
         caption: caption || null,
         tags: tags || null,
@@ -583,7 +623,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
     }
   }
 
-  const dims = DIMENSIONS[tipo] || DIMENSIONS.post
+  const dims = getDims(tipo, formato)
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -824,6 +864,14 @@ export function ModGenerador({ client, notify, updateBrand }) {
                 <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Tipo de publicación</div>
                 <Sel value={tipo} onChange={e => setTipo(e.target.value)} options={TIPO_OPTIONS} style={{ width: '100%' }} />
               </div>
+
+              {tipo !== 'historia' && (
+                <div>
+                  <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Formato</div>
+                  <Sel value={formato} onChange={e => setFormato(e.target.value)}
+                    options={(FORMATOS[tipo] || FORMATOS.post).map(f => ({ v: f.v, l: f.l }))} style={{ width: '100%' }} />
+                </div>
+              )}
 
               {tipo === 'reel' ? (
                 <>

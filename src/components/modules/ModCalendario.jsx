@@ -9,8 +9,8 @@ import { listContentTasks, createContentTask, updateContentTask, toggleContentTa
 import { getContentGoal, saveContentGoal } from '../../lib/contentGoals'
 import { listTrips, createTrip, updateTrip, deleteTrip } from '../../lib/trips'
 import { getLatestMetrica, createMetrica, importExistingPosts } from '../../lib/metricas'
-import { getUpcomingFindeLargo, getEfemerideFor } from '../../data/efemerides'
-import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play, AlertTriangle, Check, Calendar as CalIcon, Rows3, Images, Film, Clapperboard, PartyPopper, Megaphone, Trash2, ClipboardList, Plane, DownloadCloud } from 'lucide-react'
+import { getUpcomingFindeLargo, getEfemerideFor, getNextMonthEfemerides, isNearMonthEnd, nextMonthName } from '../../data/efemerides'
+import { ChevronLeft, ChevronRight, X, Plus, CircleDot, LayoutGrid, Play, AlertTriangle, Check, Calendar as CalIcon, Rows3, Images, Film, Clapperboard, PartyPopper, Megaphone, Trash2, ClipboardList, Plane, DownloadCloud, Sparkles } from 'lucide-react'
 
 const DIA_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const TIPO_META = {
@@ -265,6 +265,9 @@ export function ModCalendario({ client, notify }) {
   const pendingTasks = tasks.filter(t => !t.done).sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   const todayKey = dayKey(new Date())
+  const monthEndAlert = isNearMonthEnd(todayKey)
+  const nextMonthEfemerides = monthEndAlert ? getNextMonthEfemerides(todayKey) : []
+  const nextMonthLabel = nextMonthName(todayKey)
   const tripForDay = (key) => trips.find(t => key >= t.start_date && key <= t.end_date)
   const activeTrip = trips.find(t => todayKey >= t.start_date && todayKey <= t.end_date)
   const upcomingTrip = !activeTrip
@@ -638,6 +641,26 @@ export function ModCalendario({ client, notify }) {
         </div>
       )}
 
+      {monthEndAlert && nextMonthEfemerides.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 10, background: T.primary + '10',
+          border: `1px solid ${T.primary}35`, borderRadius: RADIUS.sm, padding: '10px 14px',
+        }}>
+          <Sparkles size={16} color={T.primary} style={{ flexShrink: 0, marginTop: 2 }} />
+          <div style={{ fontSize: 11.5, color: T.text, lineHeight: 1.5, flex: 1 }}>
+            <strong>Se viene {nextMonthLabel}:</strong> planificá contenido para estas fechas antes de que arranque el mes.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+              {nextMonthEfemerides.filter(e => e.prioridad !== 'Baja').map((e, i) => (
+                <div key={i} style={{ fontSize: 11, color: T.sub }}>
+                  <strong style={{ color: T.text }}>{toEsDate(e.date)} — {e.name}</strong>
+                  {e.idea && <span style={{ color: T.dim }}> · {e.idea}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {highlightTrip && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10, background: T.blue + '14',
@@ -748,7 +771,8 @@ export function ModCalendario({ client, notify }) {
                   const items = itemsByDay[key] || []
                   const isToday = key === dayKey(new Date())
                   const isOver = dragOverKey === key
-                  const efem = getEfemerideFor(key)
+                  const efems = getEfemerideFor(key)
+                  const efem = efems[0] || null
                   const dayTrip = tripForDay(key)
                   return (
                     <div key={key} {...dayCellProps(date)} style={{
@@ -764,18 +788,18 @@ export function ModCalendario({ client, notify }) {
                           {date.getDate()}
                         </div>
                         {efem && (
-                          <div title={efem.feriado?.name || efem.tematico?.name} style={{
+                          <div title={efems.map(e => e.name).join(' · ')} style={{
                             width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
                             background: efem.feriado ? T.warn : T.dim,
                           }} />
                         )}
                       </div>
                       {efem && (
-                        <div title={efem.feriado?.name || efem.tematico?.name} style={{
+                        <div title={efems.map(e => e.name).join(' · ')} style={{
                           fontSize: 7, color: efem.feriado ? T.warn : T.dim, fontWeight: 700,
                           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3,
                         }}>
-                          {efem.feriado?.name || efem.tematico?.name}
+                          {efem.name}{efems.length > 1 ? ` +${efems.length - 1}` : ''}
                         </div>
                       )}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
@@ -802,7 +826,8 @@ export function ModCalendario({ client, notify }) {
                 const items = itemsByDay[key] || []
                 const isToday = key === dayKey(new Date())
                 const isOver = dragOverKey === key
-                const efem = getEfemerideFor(key)
+                const efems = getEfemerideFor(key)
+                const efem = efems[0] || null
                 const dayTrip = tripForDay(key)
                 return (
                   <div key={key} {...dayCellProps(date)} style={{
@@ -817,8 +842,8 @@ export function ModCalendario({ client, notify }) {
                       <div style={{ fontSize: 9, color: T.dim, fontWeight: 700, textTransform: 'uppercase' }}>{DIA_LABELS[(date.getDay() + 6) % 7]}</div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: isToday ? T.primary : T.text }}>{date.getDate()}</div>
                       {efem && (
-                        <div style={{ fontSize: 8.5, color: efem.feriado ? T.warn : T.dim, fontWeight: 700, marginTop: 2 }}>
-                          {efem.feriado?.name || efem.tematico?.name}
+                        <div title={efems.map(e => e.name).join(' · ')} style={{ fontSize: 8.5, color: efem.feriado ? T.warn : T.dim, fontWeight: 700, marginTop: 2 }}>
+                          {efem.name}{efems.length > 1 ? ` +${efems.length - 1}` : ''}
                         </div>
                       )}
                     </div>
