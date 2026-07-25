@@ -25,8 +25,16 @@ const TASK_KIND_META = {
   evento:    { label: 'Evento',    color: T.orange, icon: PartyPopper },
 }
 
+// Clave de día en hora LOCAL (no UTC). d.toISOString() convierte a UTC antes
+// de cortar la fecha — a la noche (hora ART), sumar las 3hs de offset cruza
+// a la madrugada del día siguiente en UTC y la celda queda con la clave de
+// mañana aunque muestre el número de hoy. Por eso se arma a mano con los
+// getters locales (getFullYear/getMonth/getDate), nunca con toISOString().
 function dayKey(d) {
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 // Formatea 'YYYY-MM-DD' (fecha plana, sin hora/TZ) a "9 jul" en es-AR.
@@ -233,7 +241,7 @@ export function ModCalendario({ client, notify }) {
   // este mes (created_at), sin importar si ya se programaron/publicaron.
   const goalProgress = (item) => {
     if (!item.tipo) return null
-    const count = piezas.filter(p => p.tipo === item.tipo && p.created_at?.slice(0, 7) === monthStr).length
+    const count = piezas.filter(p => p.tipo === item.tipo && p.created_at && localDateStr(p.created_at).slice(0, 7) === monthStr).length
     return count
   }
 
@@ -251,12 +259,12 @@ export function ModCalendario({ client, notify }) {
   const itemsByDay = {}
   for (const p of piezas) {
     if (!p.scheduled_for) continue
-    const key = p.scheduled_for.slice(0, 10)
+    const key = localDateStr(p.scheduled_for)
     ;(itemsByDay[key] ||= []).push({ kind: 'pieza', data: p })
   }
   for (const v of videos) {
     if (!v.scheduled_for) continue
-    const key = v.scheduled_for.slice(0, 10)
+    const key = localDateStr(v.scheduled_for)
     ;(itemsByDay[key] ||= []).push({ kind: 'video', data: v })
   }
   for (const t of tasks) {
@@ -562,7 +570,7 @@ export function ModCalendario({ client, notify }) {
   // del rango de fechas del viaje (igual criterio que el plan mensual).
   const tripItemProgress = (trip, item) => {
     if (!item.tipo) return null
-    return piezas.filter(p => p.tipo === item.tipo && p.created_at && p.created_at.slice(0, 10) >= trip.start_date && p.created_at.slice(0, 10) <= trip.end_date).length
+    return piezas.filter(p => p.tipo === item.tipo && p.created_at && localDateStr(p.created_at) >= trip.start_date && localDateStr(p.created_at) <= trip.end_date).length
   }
 
   // ── Arrastrar y soltar: reprogramar a otro día ─────────────────────
@@ -1206,7 +1214,7 @@ export function ModCalendario({ client, notify }) {
                   <div key={v.id} style={{ display: 'flex', gap: 6, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v.titulo}</div>
-                      <div style={{ fontSize: 9, color: T.dim }}>{v.scheduled_for ? v.scheduled_for.slice(0, 10) : 'sin fecha'} · {v.estado}</div>
+                      <div style={{ fontSize: 9, color: T.dim }}>{v.scheduled_for ? localDateStr(v.scheduled_for) : 'sin fecha'} · {v.estado}</div>
                       {v.views != null && (
                         <div style={{ fontSize: 9.5, color: T.sub, marginTop: 2, display: 'flex', gap: 8 }}>
                           <span>{fmtNum(v.views)} views</span>
