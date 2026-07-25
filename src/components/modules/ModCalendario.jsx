@@ -115,11 +115,15 @@ function ItemThumb({ item, thumbs, size, onClick, onDragStart, onDragEnd }) {
           </div>
         )}
       <div style={{
-        position: 'absolute', bottom: 3, right: 3, width: 16, height: 16, borderRadius: '50%',
+        position: 'absolute', bottom: 3, right: 3,
+        width: Math.max(16, Math.round(size * 0.16)), height: Math.max(16, Math.round(size * 0.16)),
+        borderRadius: '50%',
         background: badgeColor, display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: '0 1px 3px rgba(0,0,0,.35)',
       }}>
-        {isError ? <AlertTriangle size={9} color="#fff" /> : (isPublished || isDone) ? <Check size={9} color="#fff" /> : <meta.icon size={9} color="#fff" />}
+        {isError
+          ? <AlertTriangle size={Math.max(9, Math.round(size * 0.09))} color="#fff" />
+          : (isPublished || isDone) ? <Check size={Math.max(9, Math.round(size * 0.09))} color="#fff" /> : <meta.icon size={Math.max(9, Math.round(size * 0.09))} color="#fff" />}
       </div>
     </div>
   )
@@ -774,44 +778,38 @@ export function ModCalendario({ client, notify }) {
                   const efems = getEfemerideFor(key)
                   const efem = efems[0] || null
                   const dayTrip = tripForDay(key)
+                  const efemColor = efem ? (efem.feriado ? T.warn : T.primary) : null
                   return (
                     <div key={key} {...dayCellProps(date)} style={{
-                      minHeight: 96, borderRadius: RADIUS.sm - 2, padding: 6,
-                      background: isOver ? T.primary + '12' : dayTrip ? T.blue + '0C' : inMonth ? T.surf : 'transparent',
-                      border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : T.border}`,
-                      borderTop: dayTrip ? `3px solid ${T.blue}` : undefined,
+                      minHeight: 130, borderRadius: RADIUS.sm - 2, padding: 6,
+                      background: isOver ? T.primary + '12' : dayTrip ? T.blue + '0C' : efemColor ? efemColor + '0D' : inMonth ? T.surf : 'transparent',
+                      border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : efemColor ? efemColor + '55' : T.border}`,
+                      borderTop: dayTrip ? `3px solid ${T.blue}` : efemColor ? `3px solid ${efemColor}` : undefined,
                       opacity: inMonth ? 1 : 0.35,
                       transition: 'background .12s, border-color .12s',
                     }} title={dayTrip ? `Viaje: ${dayTrip.title}` : undefined}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 3, marginBottom: 3 }}>
-                        <div style={{ fontSize: 10, color: isToday ? T.primary : T.dim, fontWeight: isToday ? 800 : 600 }}>
-                          {date.getDate()}
-                        </div>
-                        {efem && (
-                          <div title={efems.map(e => e.name).join(' · ')} style={{
-                            width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
-                            background: efem.feriado ? T.warn : T.dim,
-                          }} />
-                        )}
+                      <div style={{ fontSize: 10, color: isToday ? T.primary : T.dim, fontWeight: isToday ? 800 : 600, marginBottom: 2 }}>
+                        {date.getDate()}
                       </div>
                       {efem && (
                         <div title={efems.map(e => e.name).join(' · ')} style={{
-                          fontSize: 7, color: efem.feriado ? T.warn : T.dim, fontWeight: 700,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 3,
+                          fontSize: 8, color: efemColor, fontWeight: 700, lineHeight: 1.25,
+                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden', marginBottom: 4,
                         }}>
                           {efem.name}{efems.length > 1 ? ` +${efems.length - 1}` : ''}
                         </div>
                       )}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                        {items.slice(0, 4).map((item, i) => (
+                        {items.slice(0, 3).map((item, i) => (
                           <ItemThumb
-                            key={i} item={item} thumbs={thumbs} size={26}
+                            key={i} item={item} thumbs={thumbs} size={32}
                             onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
                             onClick={() => openEdit(item.kind, item.data)}
                           />
                         ))}
-                        {items.length > 4 && (
-                          <div style={{ fontSize: 8, color: T.dim, alignSelf: 'center' }}>+{items.length - 4}</div>
+                        {items.length > 3 && (
+                          <div style={{ fontSize: 8, color: T.dim, alignSelf: 'center' }}>+{items.length - 3}</div>
                         )}
                       </div>
                     </div>
@@ -829,12 +827,13 @@ export function ModCalendario({ client, notify }) {
                 const efems = getEfemerideFor(key)
                 const efem = efems[0] || null
                 const dayTrip = tripForDay(key)
+                const efemColor = efem ? (efem.feriado ? T.warn : T.primary) : null
                 return (
                   <div key={key} {...dayCellProps(date)} style={{
                     minHeight: 220, borderRadius: RADIUS.sm - 2, padding: 8,
-                    background: isOver ? T.primary + '12' : dayTrip ? T.blue + '0C' : T.surf,
-                    border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : T.border}`,
-                    borderTop: dayTrip ? `3px solid ${T.blue}` : undefined,
+                    background: isOver ? T.primary + '12' : dayTrip ? T.blue + '0C' : efemColor ? efemColor + '0D' : T.surf,
+                    border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : efemColor ? efemColor + '55' : T.border}`,
+                    borderTop: dayTrip ? `3px solid ${T.blue}` : efemColor ? `3px solid ${efemColor}` : undefined,
                     display: 'flex', flexDirection: 'column', gap: 8,
                     transition: 'background .12s, border-color .12s',
                   }} title={dayTrip ? `Viaje: ${dayTrip.title}` : undefined}>
@@ -842,7 +841,7 @@ export function ModCalendario({ client, notify }) {
                       <div style={{ fontSize: 9, color: T.dim, fontWeight: 700, textTransform: 'uppercase' }}>{DIA_LABELS[(date.getDay() + 6) % 7]}</div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: isToday ? T.primary : T.text }}>{date.getDate()}</div>
                       {efem && (
-                        <div title={efems.map(e => e.name).join(' · ')} style={{ fontSize: 8.5, color: efem.feriado ? T.warn : T.dim, fontWeight: 700, marginTop: 2 }}>
+                        <div title={efems.map(e => e.name).join(' · ')} style={{ fontSize: 8.5, color: efemColor, fontWeight: 700, marginTop: 2 }}>
                           {efem.name}{efems.length > 1 ? ` +${efems.length - 1}` : ''}
                         </div>
                       )}
@@ -856,7 +855,7 @@ export function ModCalendario({ client, notify }) {
                         return (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <ItemThumb
-                              item={item} thumbs={thumbs} size={34}
+                              item={item} thumbs={thumbs} size={48}
                               onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
                               onClick={() => openEdit(item.kind, item.data)}
                             />
@@ -886,13 +885,21 @@ export function ModCalendario({ client, notify }) {
           {editingItem && (
             <Card accent={T.primary}>
               <SLabel accent={T.primary}>Editar horario</SLabel>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <ItemThumb item={editingItem} thumbs={thumbs} size={38} onDragStart={() => {}} onDragEnd={() => {}} onClick={() => {}} />
-                <div style={{ fontSize: 11, color: T.text, minWidth: 0, flex: 1 }}>
-                  {editingItem.kind === 'video' ? editingItem.data.titulo
-                    : editingItem.kind === 'task' ? editingItem.data.title
-                    : (editingItem.data.overlay_text || TIPO_META[editingItem.data.tipo]?.label)}
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+                <ItemThumb item={editingItem} thumbs={thumbs} size={180} onDragStart={() => {}} onDragEnd={() => {}} onClick={() => {}} />
+              </div>
+              <div style={{ fontSize: 11.5, color: T.text, textAlign: 'center', marginBottom: 10, lineHeight: 1.4 }}>
+                {editingItem.kind === 'video' ? editingItem.data.titulo
+                  : editingItem.kind === 'task' ? editingItem.data.title
+                  : (editingItem.data.overlay_text || TIPO_META[editingItem.data.tipo]?.label)}
+                {editingItem.kind === 'pieza' && editingItem.data.caption && (
+                  <div style={{ fontSize: 10, color: T.dim, marginTop: 3 }}>{editingItem.data.caption}</div>
+                )}
+                {editingItem.kind === 'pieza' && editingItem.data.created_at && (
+                  <div style={{ fontSize: 9, color: T.dim, marginTop: 3 }}>
+                    Creada {toEsDate(editingItem.data.created_at.slice(0, 10))}
+                  </div>
+                )}
               </div>
               {editingItem.kind === 'pieza' && editingItem.data.estado === 'error' && editingItem.data.error_detail && (
                 <div style={{ fontSize: 10, color: T.red, background: T.red + '12', borderRadius: 6, padding: '7px 9px', marginBottom: 10, lineHeight: 1.5 }}>
@@ -1128,24 +1135,28 @@ export function ModCalendario({ client, notify }) {
               {banco.map(p => {
                 const meta = TIPO_META[p.tipo]
                 return (
-                  <div key={p.id} style={{ display: 'flex', gap: 6, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
+                  <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
                     <ItemThumb
-                      item={{ kind: 'pieza', data: p }} thumbs={thumbs} size={32}
+                      item={{ kind: 'pieza', data: p }} thumbs={thumbs} size={52}
                       onDragStart={startDrag('pieza', p)} onDragEnd={endDrag}
                     />
-                    <div style={{ fontSize: 10, color: meta.color, flexShrink: 0, width: 40, display: 'flex', alignItems: 'center', gap: 3 }}><meta.icon size={11} /> {meta.label}</div>
-                    <input
-                      type="date"
-                      value={scheduleDates[p.id] || ''}
-                      onChange={e => setScheduleDates(s => ({ ...s, [p.id]: e.target.value }))}
-                      style={{ flex: 1, minWidth: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 4px' }}
-                    />
-                    <input
-                      type="time"
-                      value={scheduleTimes[p.id] || '10:00'}
-                      onChange={e => setScheduleTimes(s => ({ ...s, [p.id]: e.target.value }))}
-                      style={{ width: 62, flexShrink: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 2px' }}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, color: meta.color, display: 'flex', alignItems: 'center', gap: 3 }}><meta.icon size={11} /> {meta.label}</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <input
+                          type="date"
+                          value={scheduleDates[p.id] || ''}
+                          onChange={e => setScheduleDates(s => ({ ...s, [p.id]: e.target.value }))}
+                          style={{ flex: 1, minWidth: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 4px' }}
+                        />
+                        <input
+                          type="time"
+                          value={scheduleTimes[p.id] || '10:00'}
+                          onChange={e => setScheduleTimes(s => ({ ...s, [p.id]: e.target.value }))}
+                          style={{ width: 62, flexShrink: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 2px' }}
+                        />
+                      </div>
+                    </div>
                     <Btn size="sm" onClick={() => handleProgramarPieza(p)}>OK</Btn>
                   </div>
                 )

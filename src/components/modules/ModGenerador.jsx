@@ -37,7 +37,7 @@ const FORMATOS = {
   ],
 }
 
-function scaledDims(w, h, maxBox = 240) {
+function scaledDims(w, h, maxBox = 340) {
   const dispW = w >= h ? maxBox : Math.round(maxBox * w / h)
   const dispH = w >= h ? Math.round(maxBox * h / w) : maxBox
   return { dispW, dispH }
@@ -963,13 +963,19 @@ export function ModGenerador({ client, notify, updateBrand }) {
           <SLabel>Banco — {client.name}</SLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 480, overflowY: 'auto' }}>
             {piezas.map(p => (
-              <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: T.surf }}>
-                  {piezaThumbs[p.id] && <img src={piezaThumbs[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 8 }}>
+                <div style={{ width: 72, height: 72, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: T.surf }}>
+                  {(piezaThumbs[p.id] || p.external_image_url)
+                    ? <img src={piezaThumbs[p.id] || p.external_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : null}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: T.text, fontWeight: 600 }}>{p.tipo === 'historia' ? 'Historia' : 'Post'}</div>
+                  <div style={{ fontSize: 11.5, color: T.text, fontWeight: 600 }}>
+                    {TIPO_OPTIONS.find(t => t.v === p.tipo)?.l || p.tipo}
+                    {p.formato && <span style={{ color: T.dim, fontWeight: 400 }}> · {(FORMATOS[p.tipo] || []).find(f => f.v === p.formato)?.l || p.formato}</span>}
+                  </div>
                   <div style={{ fontSize: 9, color: T.dim, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{p.estado}</div>
+                  {p.overlay_text && <div style={{ fontSize: 10, color: T.sub, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.overlay_text}</div>}
                 </div>
                 <span onClick={() => handleDeletePieza(p)} style={{ cursor: 'pointer', color: T.dim, display: 'flex' }}><X size={13} /></span>
               </div>

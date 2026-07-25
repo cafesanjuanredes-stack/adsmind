@@ -76,15 +76,27 @@ Deno.serve(async () => {
   const dayAgo   = new Date(now.getTime() - 24 * 3600 * 1000).toISOString()
   const twoWeeks = new Date(now.getTime() - 14 * 24 * 3600 * 1000).toISOString()
 
-  const { data: piezas, error } = await supabase
-    .from('piezas')
-    .select('*')
-    .eq('estado', 'publicada')
-    .not('meta_media_id', 'is', null)
-    .lte('published_at', dayAgo)
-    .gte('published_at', twoWeeks)
+  // Las historias son un caso aparte: Instagram solo expone insights de una
+  // historia mientras está ACTIVA (24hs desde que se publica). La ventana de
+  // abajo (24hs-14 días) es la correcta para posts/reels/carruseles, donde
+  // conviene esperar a que las métricas se asienten — pero aplicada a una
+  // historia garantiza consultarla recién cuando YA expiró y nunca trae
+  // nada. Por eso las historias se buscan en una ventana propia: entre 1 y
+  // 23hs después de publicadas (antes de que Instagram deje de exponerlas).
+  const oneHourAgo = new Date(now.getTime() - 1 * 3600 * 1000).toISOString()
+  const near23h     = new Date(now.getTime() - 23 * 3600 * 1000).toISOString()
 
-  if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+  const [permanentes, historias] = await Promise.all([
+    supabase.from('piezas').select('*').eq('estado', 'publicada').not('meta_media_id', 'is', null)
+      .neq('tipo', 'historia').lte('published_at', dayAgo).gte('published_at', twoWeeks),
+    supabase.from('piezas').select('*').eq('estado', 'publicada').not('meta_media_id', 'is', null)
+      .eq('tipo', 'historia').lte('published_at', oneHourAgo).gte('published_at', near23h),
+  ])
+
+  if (permanentes.error) return new Response(JSON.stringify({ error: permanentes.error.message }), { status: 500 })
+  if (historias.error) return new Response(JSON.stringify({ error: historias.error.message }), { status: 500 })
+
+  const piezas = [...(permanentes.data || []), ...(historias.data || [])]
 
   const results: unknown[] = []
 
