@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, SLabel, Btn, Input, Sel } from '../ui'
 import { T, RADIUS, SHADOW, PLATFORM_META } from '../../tokens'
 import { fmtNum } from '../../utils/format'
@@ -115,7 +115,15 @@ function ItemThumb({ item, thumbs, size, onClick, onDragStart, onDragEnd }) {
         opacity: isDone ? 0.55 : 1,
       }}
     >
-      {(img || (item.kind === 'pieza' && item.data.external_image_url))
+      {tipo === 'reel' && img
+        ? (
+          // preload="metadata" solo baja el header del video (no el archivo
+          // entero) — meterlo en un <img> forzaba la descarga completa sin
+          // poder mostrarlo igual.
+          <video src={`${img}#t=0.1`} muted playsInline preload="metadata" draggable={false}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        )
+        : (img || (item.kind === 'pieza' && item.data.external_image_url))
         ? <img src={img || item.data.external_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} draggable={false} />
         : (
           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: meta.color + '18' }}>
@@ -245,11 +253,26 @@ export function ModCalendario({ client, notify }) {
     return count
   }
 
+  // Cada getSignedUrl() trae una URL nueva con token único → el navegador
+  // no puede cachear entre llamadas, cada una es una descarga completa del
+  // archivo. Antes esto regeneraba TODAS las piezas del mes cada vez que
+  // `piezas` cambiaba de referencia (ej. al programar/reprogramar una sola),
+  // multiplicando el egress. thumbsCacheRef cachea por id y solo pide URL
+  // para lo que todavía no la tiene.
+  const thumbsCacheRef = useRef({})
   useEffect(() => {
     let cancelled = false
-    const withImage = piezas.filter(p => p.storage_path)
+    const withImage = piezas.filter(p => p.storage_path && !(p.id in thumbsCacheRef.current))
+    if (withImage.length === 0) return
     Promise.all(withImage.map(p => getSignedUrl(p.storage_path, 900).then(url => [p.id, url]).catch(() => [p.id, null])))
-      .then(entries => { if (!cancelled) setThumbs(Object.fromEntries(entries)) })
+      .then(entries => {
+        if (cancelled) return
+        setThumbs(prev => {
+          const next = { ...prev, ...Object.fromEntries(entries) }
+          thumbsCacheRef.current = next
+          return next
+        })
+      })
     return () => { cancelled = true }
   }, [piezas])
 

@@ -251,34 +251,81 @@ export function ModGenerador({ client, notify, updateBrand }) {
   }, [client.id])
 
   // ── thumbnails de assets ─────────────────────────────────────────
+  // Ojo: cada getSignedUrl() genera una URL nueva con token único, así que
+  // el navegador nunca puede servir desde cache — cada re-fetch es una
+  // descarga completa del archivo. Si regenerábamos las URLs de TODAS las
+  // piezas cada vez que se agregaba una nueva (porque cambia la referencia
+  // del array), una carga masiva de N piezas terminaba re-descargando las
+  // N-1 anteriores en cada guardado (O(n²)). Los refs de abajo cachean por
+  // id y solo piden URL para lo que todavía no la tiene.
+  const thumbsCacheRef = useRef({})
   useEffect(() => {
     let cancelled = false
-    Promise.all(assets.map(a => getSignedUrl(a.storage_path, 900).then(url => [a.id, url]).catch(() => [a.id, null])))
-      .then(entries => { if (!cancelled) setThumbs(Object.fromEntries(entries)) })
+    const missing = assets.filter(a => !(a.id in thumbsCacheRef.current))
+    if (missing.length === 0) return
+    Promise.all(missing.map(a => getSignedUrl(a.storage_path, 900).then(url => [a.id, url]).catch(() => [a.id, null])))
+      .then(entries => {
+        if (cancelled) return
+        setThumbs(prev => {
+          const next = { ...prev, ...Object.fromEntries(entries) }
+          thumbsCacheRef.current = next
+          return next
+        })
+      })
     return () => { cancelled = true }
   }, [assets])
 
   // ── thumbnails de stickers ────────────────────────────────────────
+  const stickerThumbsCacheRef = useRef({})
   useEffect(() => {
     let cancelled = false
-    Promise.all(stickers.map(a => getSignedUrl(a.storage_path, 900).then(url => [a.id, url]).catch(() => [a.id, null])))
-      .then(entries => { if (!cancelled) setStickerThumbs(Object.fromEntries(entries)) })
+    const missing = stickers.filter(a => !(a.id in stickerThumbsCacheRef.current))
+    if (missing.length === 0) return
+    Promise.all(missing.map(a => getSignedUrl(a.storage_path, 900).then(url => [a.id, url]).catch(() => [a.id, null])))
+      .then(entries => {
+        if (cancelled) return
+        setStickerThumbs(prev => {
+          const next = { ...prev, ...Object.fromEntries(entries) }
+          stickerThumbsCacheRef.current = next
+          return next
+        })
+      })
     return () => { cancelled = true }
   }, [stickers])
 
   // ── thumbnails de piezas ya generadas ────────────────────────────
+  const piezaThumbsCacheRef = useRef({})
   useEffect(() => {
     let cancelled = false
-    Promise.all(piezas.map(p => getSignedUrl(p.storage_path, 900).then(url => [p.id, url]).catch(() => [p.id, null])))
-      .then(entries => { if (!cancelled) setPiezaThumbs(Object.fromEntries(entries)) })
+    const missing = piezas.filter(p => !(p.id in piezaThumbsCacheRef.current))
+    if (missing.length === 0) return
+    Promise.all(missing.map(p => getSignedUrl(p.storage_path, 900).then(url => [p.id, url]).catch(() => [p.id, null])))
+      .then(entries => {
+        if (cancelled) return
+        setPiezaThumbs(prev => {
+          const next = { ...prev, ...Object.fromEntries(entries) }
+          piezaThumbsCacheRef.current = next
+          return next
+        })
+      })
     return () => { cancelled = true }
   }, [piezas])
 
   // ── thumbnails de sugerencias IA ─────────────────────────────────
+  const suggThumbsCacheRef = useRef({})
   useEffect(() => {
     let cancelled = false
-    Promise.all(suggestions.map(s => getSignedUrl(s.storage_path, 900).then(url => [s.id, url]).catch(() => [s.id, null])))
-      .then(entries => { if (!cancelled) setSuggThumbs(Object.fromEntries(entries)) })
+    const missing = suggestions.filter(s => !(s.id in suggThumbsCacheRef.current))
+    if (missing.length === 0) return
+    Promise.all(missing.map(s => getSignedUrl(s.storage_path, 900).then(url => [s.id, url]).catch(() => [s.id, null])))
+      .then(entries => {
+        if (cancelled) return
+        setSuggThumbs(prev => {
+          const next = { ...prev, ...Object.fromEntries(entries) }
+          suggThumbsCacheRef.current = next
+          return next
+        })
+      })
     return () => { cancelled = true }
   }, [suggestions])
 
@@ -965,9 +1012,18 @@ export function ModGenerador({ client, notify, updateBrand }) {
             {piezas.map(p => (
               <div key={p.id} style={{ display: 'flex', gap: 10, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 8 }}>
                 <div style={{ width: 72, height: 72, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: T.surf }}>
-                  {(piezaThumbs[p.id] || p.external_image_url)
-                    ? <img src={piezaThumbs[p.id] || p.external_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : null}
+                  {p.tipo === 'reel'
+                    ? (piezaThumbs[p.id]
+                        // <video preload="metadata"> solo baja el header del archivo (duración/
+                        // dimensiones), no el video entero — a diferencia de meterlo en un <img>,
+                        // que fuerza al navegador a bajar todos los bytes igual sin poder
+                        // decodificarlo como imagen.
+                        ? <video src={`${piezaThumbs[p.id]}#t=0.1`} muted playsInline preload="metadata"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : null)
+                    : ((piezaThumbs[p.id] || p.external_image_url)
+                        ? <img src={piezaThumbs[p.id] || p.external_image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : null)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11.5, color: T.text, fontWeight: 600 }}>

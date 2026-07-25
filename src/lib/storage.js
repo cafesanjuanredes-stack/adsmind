@@ -32,8 +32,12 @@ export async function uploadOriginal(clientId, file, kind /* 'foto' | 'diseno' *
 
 export async function uploadPieza(clientId, blob, filename) {
   const path = `${clientId}/piezas/${filename}`
+  // Los renders del canvas son siempre PNG (blob sin .type propio), pero los
+  // reels vienen de un <input type="file"> y son un video real — usar el
+  // .type del propio blob/File si lo trae, si no default a PNG.
+  const contentType = blob?.type || 'image/png'
   const { error } = await supabase.storage.from(BUCKET).upload(path, blob, {
-    contentType: 'image/png',
+    contentType,
     upsert: false,
   })
   if (error) throw error
