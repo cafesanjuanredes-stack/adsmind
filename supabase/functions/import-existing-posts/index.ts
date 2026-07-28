@@ -27,7 +27,7 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v25.0'
 const MAX_PAGES = 4       // ~50 posts x 4 páginas = hasta 200 posts por corrida
 const PAGE_SIZE = 50
 

@@ -18,7 +18,7 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
 
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v25.0'
 
 async function graphGet(path: string, params: Record<string, string>) {
   const qs = new URLSearchParams(params)

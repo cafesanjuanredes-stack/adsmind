@@ -24,7 +24,7 @@ const supabase = createClient(
 )
 
 // Actualizar a la versión estable vigente de Graph API al momento de deployar.
-const GRAPH = 'https://graph.facebook.com/v21.0'
+const GRAPH = 'https://graph.facebook.com/v25.0'
 
 async function graphPost(path: string, params: Record<string, string>) {
   const res = await fetch(`${GRAPH}${path}`, {
