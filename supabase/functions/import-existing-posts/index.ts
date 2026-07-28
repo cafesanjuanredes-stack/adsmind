@@ -31,8 +31,10 @@ const GRAPH = 'https://graph.facebook.com/v25.0'
 const MAX_PAGES = 4       // ~50 posts x 4 páginas = hasta 200 posts por corrida
 const PAGE_SIZE = 50
 
+// Restringido al dominio real de la app (antes '*' permitía invocar esto
+// desde cualquier sitio usando la anon key pública).
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://adsmind-seven.vercel.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 

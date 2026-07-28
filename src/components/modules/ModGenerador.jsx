@@ -3,10 +3,9 @@ import { Card, SLabel, Btn, Input, Sel, Tag } from '../ui'
 import { T, RADIUS, SHADOW } from '../../tokens'
 import { listAssets, listPiezas, createPieza, deleteAsset, deletePieza } from '../../lib/piezas'
 import { uploadOriginal, uploadPieza, getSignedUrl } from '../../lib/storage'
-import { listSuggestions, useSuggestion, discardSuggestion, generateDesignNow } from '../../lib/aiSuggestions'
 import { uploadBrandFont, resolveBrandFont } from '../../lib/brand'
 import { BRAND_FONTS } from '../../data/brandFonts'
-import { Palette, Sparkles, X, Plus, Check, Layers, Move, Wand2 } from 'lucide-react'
+import { Palette, X, Plus, Check, Layers, Move } from 'lucide-react'
 
 // ── caché de signed URLs a nivel de módulo ──────────────────────────
 // Mismo problema y misma solución que en ModCalendario.jsx: getSignedUrl()
@@ -183,11 +182,9 @@ export function ModGenerador({ client, notify, updateBrand }) {
   const [assets, setAssets]     = useState([])
   const [stickers, setStickers] = useState([])
   const [piezas, setPiezas]     = useState([])
-  const [suggestions, setSuggestions] = useState([])
   const [thumbs, setThumbs]     = useState({})
   const [stickerThumbs, setStickerThumbs] = useState({})
   const [piezaThumbs, setPiezaThumbs] = useState({})
-  const [suggThumbs, setSuggThumbs] = useState({})
   const [loadingLists, setLoadingLists] = useState(true)
 
   const [uploadKind, setUploadKind] = useState('foto')
@@ -220,9 +217,6 @@ export function ModGenerador({ client, notify, updateBrand }) {
   const [resolvedFont, setResolvedFont] = useState('Inter')
 
   // ── IA on-demand ───────────────────────────────────────────────────
-  const [showAiGen,  setShowAiGen]  = useState(false)
-  const [aiPrompt,   setAiPrompt]   = useState('')
-  const [generatingAi, setGeneratingAi] = useState(false)
 
   // ── Marca ──────────────────────────────────────────────────────
   const [showBrand,   setShowBrand]   = useState(false)
@@ -270,9 +264,6 @@ export function ModGenerador({ client, notify, updateBrand }) {
       })
       .catch(err => notify('Error cargando: ' + err.message))
       .finally(() => { if (!cancelled) setLoadingLists(false) })
-    listSuggestions(client.id)
-      .then(s => { if (!cancelled) setSuggestions(s) })
-      .catch(() => { if (!cancelled) setSuggestions([]) })
     return () => { cancelled = true }
   }, [client.id])
 
@@ -349,24 +340,6 @@ export function ModGenerador({ client, notify, updateBrand }) {
       })
     return () => { cancelled = true }
   }, [piezas])
-
-  // ── thumbnails de sugerencias IA ─────────────────────────────────
-  const suggThumbsCacheRef = useRef({})
-  useEffect(() => {
-    let cancelled = false
-    const missing = suggestions.filter(s => !(s.id in suggThumbsCacheRef.current))
-    if (missing.length === 0) return
-    Promise.all(missing.map(s => getCachedSignedUrl(s.storage_path).then(url => [s.id, url]).catch(() => [s.id, null])))
-      .then(entries => {
-        if (cancelled) return
-        setSuggThumbs(prev => {
-          const next = { ...prev, ...Object.fromEntries(entries) }
-          suggThumbsCacheRef.current = next
-          return next
-        })
-      })
-    return () => { cancelled = true }
-  }, [suggestions])
 
   // ── cargar imagen seleccionada para el canvas ──────
   useEffect(() => {
@@ -634,42 +607,6 @@ export function ModGenerador({ client, notify, updateBrand }) {
     }
   }
 
-  const handleUseSuggestion = async (s) => {
-    try {
-      const asset = await useSuggestion(s)
-      setAssets(prev => [asset, ...prev])
-      setSuggestions(prev => prev.filter(x => x.id !== s.id))
-      setSelectedAsset(asset)
-      notify('Sugerencia agregada al banco y lista para editar')
-    } catch (err) {
-      notify('Error: ' + err.message)
-    }
-  }
-
-  const handleDiscardSuggestion = async (s) => {
-    try {
-      await discardSuggestion(s)
-      setSuggestions(prev => prev.filter(x => x.id !== s.id))
-    } catch (err) {
-      notify('Error borrando: ' + err.message)
-    }
-  }
-
-  const handleGenerateAiNow = async () => {
-    setGeneratingAi(true)
-    try {
-      const suggestion = await generateDesignNow(client.id, aiPrompt)
-      setSuggestions(prev => [suggestion, ...prev])
-      setAiPrompt('')
-      setShowAiGen(false)
-      notify('Diseño generado — mirálo en Sugerencias IA')
-    } catch (err) {
-      notify('Error generando con IA: ' + err.message + ' (¿está deployada generate-design-now?)')
-    } finally {
-      setGeneratingAi(false)
-    }
-  }
-
   const handleUploadFont = async (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -713,28 +650,9 @@ export function ModGenerador({ client, notify, updateBrand }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <SLabel accent={client.color}>Generador de historias y posteos</SLabel>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Btn size="sm" variant="ghost" onClick={() => setShowAiGen(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Wand2 size={13} /> Generar con IA</Btn>
           <Btn size="sm" variant="ghost" onClick={() => setShowBrand(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette size={13} /> Marca de {client.name}</Btn>
         </div>
       </div>
-
-      {showAiGen && (
-        <Card accent={T.primary}>
-          <SLabel><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Wand2 size={13} /> Generar diseño con IA ahora</span></SLabel>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Input
-              value={aiPrompt}
-              onChange={e => setAiPrompt(e.target.value)}
-              placeholder='Ej: "una mesa con café de especialidad y medialunas, luz de mañana" (opcional — si lo dejás vacío, uso el perfil de la cuenta)'
-              style={{ flex: 1, minWidth: 260 }}
-            />
-            <Btn onClick={handleGenerateAiNow} disabled={generatingAi} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {generatingAi ? 'Generando…' : <><Sparkles size={13} /> Generar</>}
-            </Btn>
-          </div>
-          <div style={{ fontSize: 10, color: T.dim, marginTop: 8 }}>Tarda unos segundos. El resultado aparece abajo, en "Sugerencias IA", para usar o descartar.</div>
-        </Card>
-      )}
 
       {showBrand && brandForm && (
         <Card accent={T.primary}>
@@ -779,25 +697,6 @@ export function ModGenerador({ client, notify, updateBrand }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <Btn onClick={handleSaveBrand} disabled={savingBrand}>{savingBrand ? 'Guardando…' : 'Guardar marca'}</Btn>
             <Btn variant="ghost" onClick={() => setShowBrand(false)}>Cancelar</Btn>
-          </div>
-        </Card>
-      )}
-
-      {suggestions.length > 0 && (
-        <Card accent={T.primary}>
-          <SLabel accent={T.primary}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Sparkles size={13} /> Sugerencias IA — puntos de partida</span></SLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(120px,1fr))', gap: 10 }}>
-            {suggestions.map(s => (
-              <div key={s.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ aspectRatio: '1', borderRadius: RADIUS.sm - 3, overflow: 'hidden', background: T.surf2, border: `1px solid ${T.border2}` }}>
-                  {suggThumbs[s.id] && <img src={suggThumbs[s.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <Btn size="sm" variant="success" style={{ flex: 1 }} onClick={() => handleUseSuggestion(s)}>Usar</Btn>
-                  <Btn size="sm" variant="danger" onClick={() => handleDiscardSuggestion(s)}><X size={12} /></Btn>
-                </div>
-              </div>
-            ))}
           </div>
         </Card>
       )}

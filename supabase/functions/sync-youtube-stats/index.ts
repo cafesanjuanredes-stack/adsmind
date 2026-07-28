@@ -23,8 +23,10 @@ const supabase = createClient(
 const YT_API_KEY = Deno.env.get('YOUTUBE_API_KEY')
 const YT_API = 'https://www.googleapis.com/youtube/v3/videos'
 
+// Restringido al dominio real de la app (antes '*' permitía invocar esto
+// desde cualquier sitio usando la anon key pública).
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://adsmind-seven.vercel.app',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
