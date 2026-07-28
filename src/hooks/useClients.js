@@ -51,20 +51,48 @@ export function useClients() {
       if (cErr) throw cErr
       const ids = clientRows.map(c => c.id)
 
-      const [platforms, history, virals, comps, metas] = await Promise.all([
-        supabase.from('client_platforms').select('*').in('client_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
-        supabase.from('client_history').select('*').in('client_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']).order('date'),
-        supabase.from('client_virals').select('*').in('client_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
-        supabase.from('client_competitors').select('*').in('client_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
-        supabase.from('client_meta').select('*').in('client_id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']),
+      const safeIds = ids.length ? ids : ['00000000-0000-0000-0000-000000000000']
+
+      const [platforms, history, virals, comps, metas, pieces] = await Promise.all([
+        supabase.from('client_platforms').select('*').in('client_id', safeIds),
+        supabase.from('client_history').select('*').in('client_id', safeIds).order('date'),
+        supabase.from('client_virals').select('*').in('client_id', safeIds),
+        supabase.from('client_competitors').select('*').in('client_id', safeIds),
+        supabase.from('client_meta').select('*').in('client_id', safeIds),
+        supabase.from('piezas')
+          .select('id, client_id, tipo, caption, permalink, published_at, formato')
+          .in('client_id', safeIds)
+          .eq('estado', 'publicada')
+          .order('published_at', { ascending: false })
+          .limit(600),
       ])
-      for (const r of [platforms, history, virals, comps, metas]) if (r.error) throw r.error
+      for (const r of [platforms, history, virals, comps, metas, pieces]) if (r.error) throw r.error
 
       const platformsByClient = groupBy(platforms.data, 'client_id')
       const historyByClient   = groupBy(history.data, 'client_id')
       const viralsByClient    = groupBy(virals.data, 'client_id')
       const compsByClient     = groupBy(comps.data, 'client_id')
       const metaByClient      = Object.fromEntries((metas.data || []).map(m => [m.client_id, m]))
+
+      // ── Última lectura de métricas por pieza (metricas_piezas es un
+      // historial; solo nos interesa el valor más reciente por pieza) ──
+      const piezaIds = (pieces.data || []).map(p => p.id)
+      let metricsByPieza = {}
+      if (piezaIds.length) {
+        const { data: metricRows, error: mErr } = await supabase
+          .from('metricas_piezas')
+          .select('pieza_id, reach, likes, comments, saves, shares, plays, fetched_at')
+          .in('pieza_id', piezaIds)
+          .order('fetched_at', { ascending: false })
+        if (mErr) throw mErr
+        for (const m of metricRows || []) {
+          if (!metricsByPieza[m.pieza_id]) metricsByPieza[m.pieza_id] = m
+        }
+      }
+      const piecesByClient = groupBy(
+        (pieces.data || []).map(p => ({ ...p, metrics: metricsByPieza[p.id] || null })),
+        'client_id'
+      )
 
       const assembled = clientRows.map(row => {
         const meta = metaByClient[row.id]
@@ -79,6 +107,21 @@ export function useClients() {
           virals: (viralsByClient[row.id] || []).map(v => ({ id: v.id, title: v.title, platform: v.platform, date: v.date, views: v.views, likes: v.likes, comments: v.comments, type: v.type, url: v.url || '' })),
           competitors: (compsByClient[row.id] || []).map(c => ({ id: c.id, name: c.name, handle: c.handle, followers_ig: c.followers_ig, type: c.type, notes: c.notes })),
           content: { works: meta?.content_works || [], fails: meta?.content_fails || [], best_days: meta?.best_days || [], best_time: meta?.best_time || '' },
+          pieces: (piecesByClient[row.id] || []).map(p => ({
+            id: p.id,
+            tipo: p.tipo,
+            caption: p.caption || '',
+            permalink: p.permalink || '',
+            published_at: p.published_at,
+            formato: p.formato || '',
+            reach: p.metrics?.reach ?? null,
+            likes: p.metrics?.likes ?? null,
+            comments: p.metrics?.comments ?? null,
+            saves: p.metrics?.saves ?? null,
+            shares: p.metrics?.shares ?? null,
+            plays: p.metrics?.plays ?? null,
+            metrics_fetched_at: p.metrics?.fetched_at || null,
+          })),
           ads: meta?.ads || null,
           sentiment: { positive: meta?.sentiment_positive || 0, neutral: meta?.sentiment_neutral || 0, negative: meta?.sentiment_negative || 0 },
           brand: {

@@ -1,9 +1,22 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, SLabel, Btn, Input, Sel } from '../ui'
 import { T, PLATFORM_META, POST_TYPES } from '../../tokens'
 import { fmtNum, fmtDate, fmtPct } from '../../utils/format'
 import { downloadCSV } from '../../utils/download'
-import { Check, X, Calendar, Download, Plus, ExternalLink } from 'lucide-react'
+import { Check, X, Calendar, Download, Plus, ExternalLink, Image, Film, Layers, Circle, Heart, MessageCircle, Bookmark, PlayCircle } from 'lucide-react'
+
+const TIPO_META = {
+  historia: { label: 'Historia', icon: Circle },
+  post:     { label: 'Post',     icon: Image },
+  carrusel: { label: 'Carrusel', icon: Layers },
+  reel:     { label: 'Reel',     icon: Film },
+}
+
+function fmtDateShort(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return d.toLocaleDateString('es', { day: '2-digit', month: 'short' })
+}
 
 export function ModContenido({ client, allClients, notify, addViral, removeViral }) {
   const [virals,      setVirals]      = useState(client.virals)
@@ -30,8 +43,138 @@ export function ModContenido({ client, allClients, notify, addViral, removeViral
 
   const platformOptions = Object.keys(PLATFORM_META).map(k => ({ v: k, l: PLATFORM_META[k].label }))
 
+  // ── Rendimiento real por publicación (metricas_piezas) ────────────
+  const [tipoFilter, setTipoFilter] = useState('todos')
+  const pieces = client.pieces || []
+
+  const filteredPieces = useMemo(() => {
+    const list = tipoFilter === 'todos' ? pieces : pieces.filter(p => p.tipo === tipoFilter)
+    const hasReach = list.some(p => p.reach != null)
+    return [...list].sort((a, b) => {
+      if (hasReach) return (b.reach ?? -1) - (a.reach ?? -1)
+      return (b.likes ?? -1) - (a.likes ?? -1)
+    })
+  }, [pieces, tipoFilter])
+
+  const stats = useMemo(() => {
+    const withLikes = pieces.filter(p => p.likes != null)
+    const withReach = pieces.filter(p => p.reach != null)
+    const avg = (arr, key) => arr.length ? Math.round(arr.reduce((s, p) => s + (p[key] || 0), 0) / arr.length) : null
+    const byTipo = {}
+    for (const p of pieces) {
+      if (p.likes == null) continue
+      const t = p.tipo || 'post'
+      byTipo[t] ||= []
+      byTipo[t].push(p.likes)
+    }
+    let bestTipo = null, bestAvg = -1
+    for (const [t, arr] of Object.entries(byTipo)) {
+      const a = arr.reduce((s, v) => s + v, 0) / arr.length
+      if (a > bestAvg) { bestAvg = a; bestTipo = t }
+    }
+    return {
+      total: pieces.length,
+      avgReach: avg(withReach, 'reach'),
+      avgLikes: avg(withLikes, 'likes'),
+      avgComments: avg(pieces.filter(p => p.comments != null), 'comments'),
+      bestTipo,
+      pendingMetrics: pieces.filter(p => p.likes == null && p.reach == null).length,
+    }
+  }, [pieces])
+
+  const tipoOptions = [{ v: 'todos', l: 'Todos los tipos' }, ...Object.entries(TIPO_META).map(([v, m]) => ({ v, l: m.label }))]
+
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* Rendimiento real por publicación — de metricas_piezas (sync automático) */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <SLabel>Rendimiento por publicación</SLabel>
+          <Sel value={tipoFilter} onChange={e => setTipoFilter(e.target.value)} options={tipoOptions} style={{ minWidth: 150 }} />
+        </div>
+
+        {pieces.length === 0 ? (
+          <Card>
+            <div style={{ fontSize: 12, color: T.dim }}>Todavía no hay publicaciones sincronizadas para este cliente.</div>
+          </Card>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 10 }}>
+              <Card style={{ padding: 14 }}>
+                <div style={{ fontSize: 9, color: T.dim, marginBottom: 4 }}>Publicaciones</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{stats.total}</div>
+              </Card>
+              <Card style={{ padding: 14 }}>
+                <div style={{ fontSize: 9, color: T.dim, marginBottom: 4 }}>Alcance promedio</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{stats.avgReach != null ? fmtNum(stats.avgReach) : '—'}</div>
+              </Card>
+              <Card style={{ padding: 14 }}>
+                <div style={{ fontSize: 9, color: T.dim, marginBottom: 4 }}>Likes promedio</div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: T.pink }}>{stats.avgLikes != null ? fmtNum(stats.avgLikes) : '—'}</div>
+              </Card>
+              <Card style={{ padding: 14 }}>
+                <div style={{ fontSize: 9, color: T.dim, marginBottom: 4 }}>Mejor tipo (por likes)</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: T.primary }}>{stats.bestTipo ? TIPO_META[stats.bestTipo]?.label || stats.bestTipo : '—'}</div>
+              </Card>
+            </div>
+
+            {stats.avgReach == null && (
+              <div style={{ fontSize: 11, color: T.dim, marginBottom: 10, padding: '8px 10px', background: T.surf, borderRadius: 6 }}>
+                El alcance (reach) todavía no está disponible por un permiso pendiente de Meta — likes y comentarios sí son datos reales.
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 480, overflowY: 'auto' }}>
+              {filteredPieces.map(p => {
+                const meta = TIPO_META[p.tipo] || TIPO_META.post
+                return (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: T.card, border: `1px solid ${T.border}`, borderRadius: 8 }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 5, background: T.ig + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.ig, flexShrink: 0 }}>
+                      <meta.icon size={13} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 5 }}>
+                        {p.caption ? p.caption.slice(0, 60) : `${meta.label} sin descripción`}
+                        {p.permalink && (
+                          <a href={p.permalink} target="_blank" rel="noreferrer" style={{ color: T.dim, display: 'flex', flexShrink: 0 }}>
+                            <ExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 9, color: T.dim }}>{meta.label} · {fmtDateShort(p.published_at)}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 14 }}>
+                      <div style={{ textAlign: 'right', minWidth: 40 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.text }}>{p.reach != null ? fmtNum(p.reach) : '—'}</div>
+                        <div style={{ fontSize: 8, color: T.dim, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}>alcance</div>
+                      </div>
+                      <div style={{ textAlign: 'right', minWidth: 36 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.pink }}>{p.likes != null ? fmtNum(p.likes) : '—'}</div>
+                        <div style={{ fontSize: 8, color: T.dim, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}><Heart size={8} /></div>
+                      </div>
+                      <div style={{ textAlign: 'right', minWidth: 36 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.blue }}>{p.comments != null ? fmtNum(p.comments) : '—'}</div>
+                        <div style={{ fontSize: 8, color: T.dim, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}><MessageCircle size={8} /></div>
+                      </div>
+                      {p.tipo === 'reel' && (
+                        <div style={{ textAlign: 'right', minWidth: 36 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.violet }}>{p.plays != null ? fmtNum(p.plays) : '—'}</div>
+                          <div style={{ fontSize: 8, color: T.dim, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}><PlayCircle size={8} /></div>
+                        </div>
+                      )}
+                      <div style={{ textAlign: 'right', minWidth: 36 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: T.green }}>{p.saves != null ? fmtNum(p.saves) : '—'}</div>
+                        <div style={{ fontSize: 8, color: T.dim, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end' }}><Bookmark size={8} /></div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Works / Fails */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
