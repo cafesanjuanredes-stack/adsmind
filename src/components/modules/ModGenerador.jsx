@@ -8,6 +8,22 @@ import { uploadBrandFont, resolveBrandFont } from '../../lib/brand'
 import { BRAND_FONTS } from '../../data/brandFonts'
 import { Palette, Sparkles, X, Plus, Check, Layers, Move, Wand2 } from 'lucide-react'
 
+// ── caché de signed URLs a nivel de módulo ──────────────────────────
+// Mismo problema y misma solución que en ModCalendario.jsx: getSignedUrl()
+// devuelve un token único cada vez, así que reutilizar la MISMA cadena de
+// URL (mientras siga vigente) es lo que le permite al navegador servir
+// desde su caché HTTP en vez de re-descargar, incluso si el componente se
+// desmontó y volvió a montar (cambio de cliente, cambio de pestaña, etc).
+const SIGNED_URL_TTL = 3600
+const signedUrlCache = new Map() // storage_path -> { url, expiresAt }
+async function getCachedSignedUrl(path) {
+  const hit = signedUrlCache.get(path)
+  if (hit && hit.expiresAt > Date.now()) return hit.url
+  const url = await getSignedUrl(path, SIGNED_URL_TTL)
+  signedUrlCache.set(path, { url, expiresAt: Date.now() + (SIGNED_URL_TTL - 600) * 1000 })
+  return url
+}
+
 function hexToRgba(hex, alpha) {
   const m = (hex || '#000000').replace('#', '')
   const r = parseInt(m.slice(0, 2), 16) || 0
@@ -153,6 +169,16 @@ function loadImage(url) {
   })
 }
 
+// ── caché de imágenes originales en resolución completa ────────────
+// Estos archivos son las fotos tal cual se subieron (a veces 15-24MB, sin
+// comprimir). Antes, cada vez que se seleccionaba una foto del banco (para
+// verla en el canvas) o se guardaba una pieza, se pedía una signed URL
+// nueva y se volvía a descargar el archivo entero — aunque fuera la MISMA
+// foto que ya se había descargado segundos antes. Con bancos de fotos
+// grandes y mucho ida-y-vuelta probando cuál queda mejor, esto multiplicaba
+// muchísimo el tráfico real. Este caché (por storage_path, para toda la
+// sesión del módulo) hace que cada archivo se baje una sola vez.
+
 export function ModGenerador({ client, notify, updateBrand }) {
   const [assets, setAssets]     = useState([])
   const [stickers, setStickers] = useState([])
@@ -250,6 +276,19 @@ export function ModGenerador({ client, notify, updateBrand }) {
     return () => { cancelled = true }
   }, [client.id])
 
+  // ── caché de imágenes en resolución completa (banco de fotos) ────
+  // Ver comentario junto a loadImage() más arriba. Cachea por storage_path
+  // durante toda la sesión del módulo — seleccionar la misma foto dos
+  // veces, o guardarla después de haberla previsualizado, no la vuelve a
+  // descargar.
+  const fullImgCacheRef = useRef({})
+  const loadFullImage = useCallback((storagePath) => {
+    if (!fullImgCacheRef.current[storagePath]) {
+      fullImgCacheRef.current[storagePath] = getCachedSignedUrl(storagePath).then(loadImage)
+    }
+    return fullImgCacheRef.current[storagePath]
+  }, [])
+
   // ── thumbnails de assets ─────────────────────────────────────────
   // Ojo: cada getSignedUrl() genera una URL nueva con token único, así que
   // el navegador nunca puede servir desde cache — cada re-fetch es una
@@ -263,7 +302,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
     let cancelled = false
     const missing = assets.filter(a => !(a.id in thumbsCacheRef.current))
     if (missing.length === 0) return
-    Promise.all(missing.map(a => getSignedUrl(a.storage_path, 900).then(url => [a.id, url]).catch(() => [a.id, null])))
+    Promise.all(missing.map(a => getCachedSignedUrl(a.storage_path).then(url => [a.id, url]).catch(() => [a.id, null])))
       .then(entries => {
         if (cancelled) return
         setThumbs(prev => {
@@ -281,7 +320,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
     let cancelled = false
     const missing = stickers.filter(a => !(a.id in stickerThumbsCacheRef.current))
     if (missing.length === 0) return
-    Promise.all(missing.map(a => getSignedUrl(a.storage_path, 900).then(url => [a.id, url]).catch(() => [a.id, null])))
+    Promise.all(missing.map(a => getCachedSignedUrl(a.storage_path).then(url => [a.id, url]).catch(() => [a.id, null])))
       .then(entries => {
         if (cancelled) return
         setStickerThumbs(prev => {
@@ -299,7 +338,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
     let cancelled = false
     const missing = piezas.filter(p => !(p.id in piezaThumbsCacheRef.current))
     if (missing.length === 0) return
-    Promise.all(missing.map(p => getSignedUrl(p.storage_path, 900).then(url => [p.id, url]).catch(() => [p.id, null])))
+    Promise.all(missing.map(p => getCachedSignedUrl(p.storage_path).then(url => [p.id, url]).catch(() => [p.id, null])))
       .then(entries => {
         if (cancelled) return
         setPiezaThumbs(prev => {
@@ -317,7 +356,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
     let cancelled = false
     const missing = suggestions.filter(s => !(s.id in suggThumbsCacheRef.current))
     if (missing.length === 0) return
-    Promise.all(missing.map(s => getSignedUrl(s.storage_path, 900).then(url => [s.id, url]).catch(() => [s.id, null])))
+    Promise.all(missing.map(s => getCachedSignedUrl(s.storage_path).then(url => [s.id, url]).catch(() => [s.id, null])))
       .then(entries => {
         if (cancelled) return
         setSuggThumbs(prev => {
@@ -333,8 +372,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
   useEffect(() => {
     if (!selectedAsset) { imgRef.current = null; setAssetQuality(null); draw(); return }
     let cancelled = false
-    getSignedUrl(selectedAsset.storage_path, 600).then(async url => {
-      const img = await loadImage(url)
+    loadFullImage(selectedAsset.storage_path).then(img => {
       if (cancelled) return
       imgRef.current = img
       setAssetQuality({ w: img.naturalWidth, h: img.naturalHeight, low: Math.min(img.naturalWidth, img.naturalHeight) < MIN_QUALITY_PX })
@@ -348,8 +386,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
   useEffect(() => {
     if (!selectedSticker) { stickerImgRef.current = null; draw(); return }
     let cancelled = false
-    getSignedUrl(selectedSticker.storage_path, 600).then(async url => {
-      const img = await loadImage(url)
+    loadFullImage(selectedSticker.storage_path).then(img => {
       if (cancelled) return
       stickerImgRef.current = img
       draw()
@@ -506,8 +543,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
 
       const renderedPaths = []
       for (const asset of targets) {
-        const url = await getSignedUrl(asset.storage_path, 600)
-        const img = await loadImage(url)
+        const img = await loadFullImage(asset.storage_path)
         renderFrame(ctx, w, h, {
           img, text: overlayText, textPos, fontSize, textColor, bgColor, bgBar,
           font: resolvedFont, stickerImg: stickerImgRef.current, stickerPos, stickerScale,

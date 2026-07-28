@@ -145,6 +145,25 @@ function ItemThumb({ item, thumbs, size, onClick, onDragStart, onDragEnd }) {
   )
 }
 
+// ── caché de signed URLs a nivel de módulo ──────────────────────────
+// getSignedUrl() normalmente devuelve una URL con un token único cada vez,
+// así que el navegador nunca la reconoce como "la misma" y descarga el
+// archivo de nuevo. Acá cacheamos por storage_path fuera del componente,
+// para que sobreviva a que ModCalendario se desmonte (ej. al cambiar de
+// pestaña) — así, mientras la URL siga vigente, se reutiliza la MISMA
+// cadena y el navegador sirve la miniatura desde su propio caché HTTP sin
+// bajar nada. Se pide con 1h de vigencia (coincide con el cache-control
+// default de Supabase Storage) y se renueva un poco antes de vencer.
+const SIGNED_URL_TTL = 3600
+const signedUrlCache = new Map() // storage_path -> { url, expiresAt }
+async function getCachedSignedUrl(path) {
+  const hit = signedUrlCache.get(path)
+  if (hit && hit.expiresAt > Date.now()) return hit.url
+  const url = await getSignedUrl(path, SIGNED_URL_TTL)
+  signedUrlCache.set(path, { url, expiresAt: Date.now() + (SIGNED_URL_TTL - 600) * 1000 })
+  return url
+}
+
 export function ModCalendario({ client, notify }) {
   const [view, setView] = useState('mes') // 'mes' | 'semana'
   const [month, setMonth] = useState(() => { const d = new Date(); d.setDate(1); return d })
@@ -264,7 +283,7 @@ export function ModCalendario({ client, notify }) {
     let cancelled = false
     const withImage = piezas.filter(p => p.storage_path && !(p.id in thumbsCacheRef.current))
     if (withImage.length === 0) return
-    Promise.all(withImage.map(p => getSignedUrl(p.storage_path, 900).then(url => [p.id, url]).catch(() => [p.id, null])))
+    Promise.all(withImage.map(p => getCachedSignedUrl(p.storage_path).then(url => [p.id, url]).catch(() => [p.id, null])))
       .then(entries => {
         if (cancelled) return
         setThumbs(prev => {
