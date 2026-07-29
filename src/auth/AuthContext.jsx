@@ -11,6 +11,8 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined) // undefined = todavía verificando
   const [error,   setError]   = useState('')
+  // undefined = todavía no se buscó, null = usuario sin restricciones (admin)
+  const [permissions, setPermissions] = useState(undefined)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -21,6 +23,23 @@ export function AuthProvider({ children }) {
 
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  // ── Permisos (client_ids / modules) del usuario logueado ────────────
+  // Si no hay fila en user_permissions, el usuario es admin (ve todo) —
+  // mismo comportamiento que antes de que existiera esta tabla.
+  useEffect(() => {
+    if (!session?.user?.id) { setPermissions(session === null ? null : undefined); return }
+    let cancelled = false
+    supabase.from('user_permissions')
+      .select('client_ids, modules')
+      .eq('user_id', session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return
+        setPermissions(data ? { clientIds: data.client_ids || null, modules: data.modules || null } : null)
+      })
+    return () => { cancelled = true }
+  }, [session?.user?.id])
 
   const login = useCallback(async (email, password) => {
     const { error: authError } = await supabase.auth.signInWithPassword({
@@ -48,6 +67,7 @@ export function AuthProvider({ children }) {
         logout,
         error,
         setError,
+        permissions, // null = admin (todo permitido), { clientIds, modules } = restringido
       }}
     >
       {children}

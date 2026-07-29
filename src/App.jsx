@@ -37,7 +37,11 @@ function clientStatus(client) {
 }
 
 export default function App() {
-  const { logout } = useAuth()
+  const { logout, permissions } = useAuth()
+  const visibleModules = permissions?.modules?.length
+    ? MODULES.filter(m => permissions.modules.includes(m.id))
+    : MODULES
+  const isRestricted = !!permissions
   const {
     clients, loading, loadError, addClient, removeClient,
     addPlatform, updatePlatform, removePlatform,
@@ -45,8 +49,9 @@ export default function App() {
     addCompetitor, removeCompetitor, updateBrand,
   } = useClients()
 
+  const defaultMod = visibleModules[0]?.id || 'resumen'
   const [activeId,  setActiveId]  = useState(null)
-  const [activeMod, setActiveMod] = useState('resumen')
+  const [activeMod, setActiveMod] = useState(defaultMod)
   const [toast,     setToast]     = useState(null)
   const [showAdd,   setShowAdd]   = useState(false)
 
@@ -65,7 +70,7 @@ export default function App() {
     const id = await addClient(name, industry, avatar)
     if (id) {
       setActiveId(id)
-      setActiveMod('resumen')
+      setActiveMod(defaultMod)
       notify(`Cliente "${name}" creado`)
     } else {
       notify('No se pudo crear el cliente')
@@ -137,7 +142,7 @@ export default function App() {
               return (
                 <button
                   key={c.id}
-                  onClick={() => { setActiveId(c.id); setActiveMod('resumen') }}
+                  onClick={() => { setActiveId(c.id); setActiveMod(defaultMod) }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '0 16px', height: '100%',
@@ -182,19 +187,21 @@ export default function App() {
               )
             })}
 
-            {/* Add client button */}
-            <button
-              onClick={() => setShowAdd(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '0 14px', height: '100%',
-                border: 'none', background: 'transparent',
-                cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 11, color: T.dim,
-              }}
-            >
-              <Plus size={12} /> Cliente
-            </button>
+            {/* Add client button (solo admins sin restricción de cliente) */}
+            {!isRestricted && (
+              <button
+                onClick={() => setShowAdd(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '0 14px', height: '100%',
+                  border: 'none', background: 'transparent',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 11, color: T.dim,
+                }}
+              >
+                <Plus size={12} /> Cliente
+              </button>
+            )}
           </div>
 
           {/* Logout */}
@@ -219,7 +226,7 @@ export default function App() {
         {/* Module nav */}
         {client && (
           <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', gap: 4 }}>
-            {MODULES.map(m => (
+            {visibleModules.map(m => (
               <button
                 key={m.id}
                 onClick={() => setActiveMod(m.id)}
