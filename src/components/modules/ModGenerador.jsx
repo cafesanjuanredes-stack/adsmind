@@ -208,6 +208,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
   const [tags,        setTags]        = useState('')
   const [reelFile,    setReelFile]    = useState(null)
   const [uploadingReel, setUploadingReel] = useState(false)
+  const [uploadingFinished, setUploadingFinished] = useState(false)
   const [textPos,     setTextPos]     = useState({ x: 0.5, y: 0.86 })
   const [fontSize,    setFontSize]    = useState(72)
   const [textColor,   setTextColor]   = useState('#FFFFFF')
@@ -598,6 +599,36 @@ export function ModGenerador({ client, notify, updateBrand }) {
     }
   }
 
+  // ── Subir un diseño ya terminado (Canva, Photoshop, etc) directo al
+  // banco, sin pasar por el canvas/overlay. Sube el archivo tal cual —
+  // mismo patrón que handleSaveReel, generalizado a imágenes. Esto evita
+  // el re-render a PNG que hace handleSaveToBanco (que igual re-sube el
+  // archivo aunque no se toque el overlay).
+  const handleUploadFinished = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploadingFinished(true)
+    try {
+      const path = await uploadPieza(client.id, file, `${tipo}-${Date.now()}-${file.name}`)
+      const pieza = await createPieza({
+        client_id: client.id,
+        tipo,
+        formato: tipo === 'historia' ? null : formato,
+        storage_path: path,
+        caption: (tipo === 'post' || tipo === 'carrusel') ? (caption || null) : null,
+        tags: (tipo === 'post' || tipo === 'carrusel') ? (tags || null) : null,
+        estado: 'banco',
+      })
+      setPiezas(prev => [pieza, ...prev])
+      notify('Diseño subido directo al banco (sin pasar por el editor)')
+    } catch (err) {
+      notify('Error subiendo: ' + err.message)
+    } finally {
+      setUploadingFinished(false)
+      e.target.value = ''
+    }
+  }
+
   const handleDeletePieza = async (pieza) => {
     try {
       await deletePieza(pieza)
@@ -852,6 +883,26 @@ export function ModGenerador({ client, notify, updateBrand }) {
                   <div style={{ fontSize: 10, color: T.dim, marginBottom: 4 }}>Formato</div>
                   <Sel value={formato} onChange={e => setFormato(e.target.value)}
                     options={(FORMATOS[tipo] || FORMATOS.post).map(f => ({ v: f.v, l: f.l }))} style={{ width: '100%' }} />
+                </div>
+              )}
+
+              {tipo !== 'reel' && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                  background: T.surf2, border: `1px dashed ${T.border2}`, borderRadius: RADIUS.sm - 2,
+                  padding: '8px 10px',
+                }}>
+                  <div style={{ fontSize: 10, color: T.dim, lineHeight: 1.4 }}>
+                    ¿Ya lo tenés diseñado (Canva, Photoshop, etc)? Subilo tal cual, sin pasar por el editor de acá abajo.
+                  </div>
+                  <label style={{
+                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2,
+                    fontSize: 10.5, color: T.sub, cursor: uploadingFinished ? 'not-allowed' : 'pointer', padding: '6px 10px', whiteSpace: 'nowrap',
+                  }}>
+                    {uploadingFinished ? 'Subiendo…' : <><Plus size={11} style={{ marginRight: 4, verticalAlign: -2 }} />Subir diseño</>}
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUploadFinished} disabled={uploadingFinished} />
+                  </label>
                 </div>
               )}
 
