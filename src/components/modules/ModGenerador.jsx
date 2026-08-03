@@ -446,13 +446,16 @@ export function ModGenerador({ client, notify, updateBrand }) {
   function handleCanvasUp() { dragRef.current = null }
 
   const handleUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
     setUploading(true)
     try {
-      const asset = await uploadOriginal(client.id, file, uploadKind)
-      setAssets(prev => [asset, ...prev])
-      notify('Imagen subida al banco')
+      const uploaded = []
+      for (const file of files) {
+        uploaded.push(await uploadOriginal(client.id, file, uploadKind))
+      }
+      setAssets(prev => [...uploaded, ...prev])
+      notify(uploaded.length > 1 ? `${uploaded.length} imágenes subidas al banco` : 'Imagen subida al banco')
     } catch (err) {
       notify('Error subiendo: ' + err.message)
     } finally {
@@ -605,24 +608,49 @@ export function ModGenerador({ client, notify, updateBrand }) {
   // el re-render a PNG que hace handleSaveToBanco (que igual re-sube el
   // archivo aunque no se toque el overlay).
   const handleUploadFinished = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
     setUploadingFinished(true)
     try {
-      const path = await uploadPieza(client.id, file, `${tipo}-${Date.now()}-${file.name}`)
-      const pieza = await createPieza({
-        client_id: client.id,
-        tipo,
-        formato: tipo === 'historia' ? null : formato,
-        storage_path: path,
-        caption: (tipo === 'post' || tipo === 'carrusel') ? (caption || null) : null,
-        tags: (tipo === 'post' || tipo === 'carrusel') ? (tags || null) : null,
-        estado: 'banco',
-      })
-      setPiezas(prev => [pieza, ...prev])
-      notify('Diseño subido directo al banco (sin pasar por el editor)')
+      const paths = []
+      for (const file of files) {
+        paths.push(await uploadPieza(client.id, file, `${tipo}-${Date.now()}-${file.name}`))
+      }
+
+      if (tipo === 'carrusel') {
+        // Varias fotos de carrusel = UNA sola pieza con carousel_paths,
+        // igual que handleSaveToBanco (si no, quedarían como N carruseles
+        // sueltos de 1 foto cada uno en vez de 1 carrusel de N fotos).
+        const pieza = await createPieza({
+          client_id: client.id,
+          tipo: 'carrusel',
+          formato,
+          storage_path: paths[0],
+          carousel_paths: paths.slice(1),
+          caption: caption || null,
+          tags: tags || null,
+          estado: 'banco',
+        })
+        setPiezas(prev => [pieza, ...prev])
+        notify(`Carrusel de ${paths.length} fotos subido directo al banco`)
+      } else {
+        const nuevas = []
+        for (const path of paths) {
+          nuevas.push(await createPieza({
+            client_id: client.id,
+            tipo,
+            formato: tipo === 'historia' ? null : formato,
+            storage_path: path,
+            caption: tipo === 'post' ? (caption || null) : null,
+            tags: tipo === 'post' ? (tags || null) : null,
+            estado: 'banco',
+          }))
+        }
+        setPiezas(prev => [...nuevas, ...prev])
+        notify(nuevas.length > 1 ? `${nuevas.length} diseños subidos directo al banco` : 'Diseño subido directo al banco (sin pasar por el editor)')
+      }
     } catch (err) {
-      notify('Error subiendo: ' + err.message)
+      notify('Error subiendo: ' + err.message + (err.message?.includes('carousel_paths') || err.message?.includes('tags') ? ' — corré la migración 0009 en Supabase.' : ''))
     } finally {
       setUploadingFinished(false)
       e.target.value = ''
@@ -752,7 +780,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
               fontSize: 11, color: T.sub, cursor: uploading ? 'not-allowed' : 'pointer', padding: '0 8px',
             }}>
               {uploading ? 'Subiendo…' : <><Plus size={12} style={{ marginRight: 4, verticalAlign: -2 }} />Subir</>}
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
+              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUpload} disabled={uploading} />
             </label>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
@@ -900,8 +928,8 @@ export function ModGenerador({ client, notify, updateBrand }) {
                     background: T.surf, border: `1px solid ${T.border2}`, borderRadius: RADIUS.sm - 2,
                     fontSize: 10.5, color: T.sub, cursor: uploadingFinished ? 'not-allowed' : 'pointer', padding: '6px 10px', whiteSpace: 'nowrap',
                   }}>
-                    {uploadingFinished ? 'Subiendo…' : <><Plus size={11} style={{ marginRight: 4, verticalAlign: -2 }} />Subir diseño</>}
-                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleUploadFinished} disabled={uploadingFinished} />
+                    {uploadingFinished ? 'Subiendo…' : <><Plus size={11} style={{ marginRight: 4, verticalAlign: -2 }} />Subir diseño{tipo === 'carrusel' ? ' (varios)' : ''}</>}
+                    <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUploadFinished} disabled={uploadingFinished} />
                   </label>
                 </div>
               )}
