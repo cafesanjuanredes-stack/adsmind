@@ -51,6 +51,16 @@ async function signedUrlFor(path: string, expires = 900) {
   return data.signedUrl
 }
 
+// Las historias pueden ser foto O video (subidas directo desde "Subir
+// diseño" sin pasar por el canvas, que solo sabe dibujar imágenes) —
+// hay que detectar cuál es para mandarle a Meta video_url en vez de
+// image_url. No guardamos mime-type en la tabla, así que alcanza con
+// mirar la extensión del archivo.
+const VIDEO_EXT = /\.(mp4|mov|m4v|webm)$/i
+function isVideoPath(path: string) {
+  return VIDEO_EXT.test(path)
+}
+
 // Meta procesa el archivo de forma asíncrona después de crear el
 // contenedor — publicar antes de que termine tira "Media ID is not
 // available". Hay que esperar a que status_code pase a FINISHED.
@@ -99,7 +109,11 @@ async function publishPieza(pieza: any, account: any) {
   const containerParams: Record<string, string> = { access_token: accessToken }
 
   if (pieza.tipo === 'historia') {
-    containerParams.image_url = url
+    if (isVideoPath(pieza.storage_path)) {
+      containerParams.video_url = url
+    } else {
+      containerParams.image_url = url
+    }
     containerParams.media_type = 'STORIES'
   } else if (pieza.tipo === 'reel') {
     containerParams.video_url = url
@@ -113,7 +127,8 @@ async function publishPieza(pieza: any, account: any) {
 
   const container = await graphPost(`/${account.ig_user_id}/media`, containerParams)
   // Los reels/video tardan bastante más en procesarse que una foto.
-  await waitUntilReady(container.id, accessToken, pieza.tipo === 'reel' ? 25000 : 15000)
+  const isVideo = pieza.tipo === 'reel' || (pieza.tipo === 'historia' && containerParams.video_url)
+  await waitUntilReady(container.id, accessToken, isVideo ? 25000 : 15000)
   return graphPost(`/${account.ig_user_id}/media_publish`, { creation_id: container.id, access_token: accessToken })
 }
 

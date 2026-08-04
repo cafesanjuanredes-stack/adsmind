@@ -922,6 +922,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
                 }}>
                   <div style={{ fontSize: 10, color: T.dim, lineHeight: 1.4 }}>
                     ¿Ya lo tenés diseñado (Canva, Photoshop, etc)? Subilo tal cual, sin pasar por el editor de acá abajo.
+                    {tipo === 'historia' && ' Acepta foto o video.'}
                   </div>
                   <label style={{
                     flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -929,7 +930,7 @@ export function ModGenerador({ client, notify, updateBrand }) {
                     fontSize: 10.5, color: T.sub, cursor: uploadingFinished ? 'not-allowed' : 'pointer', padding: '6px 10px', whiteSpace: 'nowrap',
                   }}>
                     {uploadingFinished ? 'Subiendo…' : <><Plus size={11} style={{ marginRight: 4, verticalAlign: -2 }} />Subir diseño{tipo === 'carrusel' ? ' (varios)' : ''}</>}
-                    <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUploadFinished} disabled={uploadingFinished} />
+                    <input type="file" accept={tipo === 'historia' ? 'image/*,video/*' : 'image/*'} multiple style={{ display: 'none' }} onChange={handleUploadFinished} disabled={uploadingFinished} />
                   </label>
                 </div>
               )}
