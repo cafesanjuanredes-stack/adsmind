@@ -128,6 +128,12 @@ Deno.serve(async () => {
     .select('*')
     .eq('estado', 'programada')
     .lte('scheduled_for', nowIso)
+    // Importante para historias que necesitan orden (ej. 10:00, 10:01,
+    // 10:02): sin este order-by, Postgres puede devolver las filas en
+    // cualquier orden y se publicarían salteadas. El for-loop de abajo ya
+    // es secuencial (espera a que cada una termine antes de la próxima),
+    // así que esto alcanza para garantizar el orden real de publicación.
+    .order('scheduled_for', { ascending: true })
 
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 })
 

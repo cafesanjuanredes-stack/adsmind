@@ -831,7 +831,7 @@ export function ModCalendario({ client, notify }) {
                   const efemColor = efem ? (efem.feriado ? T.warn : T.primary) : null
                   return (
                     <div key={key} {...dayCellProps(date)} style={{
-                      minHeight: 130, borderRadius: RADIUS.sm - 2, padding: 6,
+                      minHeight: 148, borderRadius: RADIUS.sm - 2, padding: 6,
                       background: isOver ? T.primary + '12' : dayTrip ? T.blue + '0C' : efemColor ? efemColor + '0D' : inMonth ? T.surf : 'transparent',
                       border: `1.5px solid ${isOver ? T.primary : isToday ? T.primary : efemColor ? efemColor + '55' : T.border}`,
                       borderTop: dayTrip ? `3px solid ${T.blue}` : efemColor ? `3px solid ${efemColor}` : undefined,
@@ -853,7 +853,7 @@ export function ModCalendario({ client, notify }) {
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
                         {items.slice(0, 3).map((item, i) => (
                           <ItemThumb
-                            key={i} item={item} thumbs={thumbs} size={32}
+                            key={i} item={item} thumbs={thumbs} size={40}
                             onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
                             onClick={() => openEdit(item.kind, item.data)}
                           />
@@ -905,7 +905,7 @@ export function ModCalendario({ client, notify }) {
                         return (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <ItemThumb
-                              item={item} thumbs={thumbs} size={48}
+                              item={item} thumbs={thumbs} size={64}
                               onDragStart={startDrag(item.kind, item.data)} onDragEnd={endDrag}
                               onClick={() => openEdit(item.kind, item.data)}
                             />
@@ -932,12 +932,80 @@ export function ModCalendario({ client, notify }) {
 
         {/* ── Sidebar: banco pendiente + video externo ───────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Banco sin programar va primero — pegado al calendario, sin
+              tener que scrollear más allá de Tareas/Viajes para verlo. */}
+          <Card>
+            <SLabel>Banco sin programar</SLabel>
+            <div style={{ fontSize: 9, color: T.dim, marginBottom: 8, marginTop: -6 }}>Arrastrá una foto directo al calendario, o elegí fecha y hora acá.</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
+              {banco.map(p => {
+                const meta = TIPO_META[p.tipo]
+                return (
+                  <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
+                    <ItemThumb
+                      item={{ kind: 'pieza', data: p }} thumbs={thumbs} size={60}
+                      onDragStart={startDrag('pieza', p)} onDragEnd={endDrag}
+                      onClick={() => openEdit('pieza', p)}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, color: meta.color, display: 'flex', alignItems: 'center', gap: 3 }}><meta.icon size={11} /> {meta.label}</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <input
+                          type="date"
+                          value={scheduleDates[p.id] || ''}
+                          onChange={e => setScheduleDates(s => ({ ...s, [p.id]: e.target.value }))}
+                          style={{ flex: 1, minWidth: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 4px' }}
+                        />
+                        <input
+                          type="time"
+                          value={scheduleTimes[p.id] || '10:00'}
+                          onChange={e => setScheduleTimes(s => ({ ...s, [p.id]: e.target.value }))}
+                          style={{ width: 62, flexShrink: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 2px' }}
+                        />
+                      </div>
+                    </div>
+                    <Btn size="sm" onClick={() => handleProgramarPieza(p)}>OK</Btn>
+                  </div>
+                )
+              })}
+              {!loading && !banco.length && (
+                <div style={{ fontSize: 11, color: T.dim }}>Nada pendiente — todo lo del banco ya está programado.</div>
+              )}
+            </div>
+          </Card>
+
           {editingItem && (
             <Card accent={T.primary}>
               <SLabel accent={T.primary}>Editar horario</SLabel>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-                <ItemThumb item={editingItem} thumbs={thumbs} size={180} onDragStart={() => {}} onDragEnd={() => {}} onClick={() => {}} />
+              <div style={{
+                display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 10,
+                background: T.surf2, borderRadius: RADIUS.sm, border: `1px solid ${T.border2}`,
+                minHeight: 220, maxHeight: 340, overflow: 'hidden', padding: 8, boxSizing: 'border-box',
+              }}>
+                {/* object-fit: contain (no cover) — se ve la pieza ENTERA, sin
+                    recortar, sea cual sea su relación de aspecto (historia
+                    9:16, post cuadrado, horizontal, etc). El ItemThumb de las
+                    grillas usa cover a propósito (mosaico parejo), pero acá
+                    lo que importa es poder revisar qué se está por publicar. */}
+                {editingItem.kind === 'pieza' && editingItem.data.tipo === 'reel' && thumbs[editingItem.data.id]
+                  ? <video src={thumbs[editingItem.data.id]} controls muted playsInline
+                      style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 6 }} />
+                  : (() => {
+                      const src = editingItem.kind === 'pieza'
+                        ? (thumbs[editingItem.data.id] || editingItem.data.external_image_url)
+                        : null
+                      const meta = editingItem.kind === 'video' ? TIPO_META.video : editingItem.kind === 'task' ? TASK_KIND_META[editingItem.data.kind] : TIPO_META[editingItem.data.tipo]
+                      return src
+                        ? <img src={src} alt="" style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 6 }} />
+                        : <meta.icon size={64} color={meta.color} />
+                    })()}
               </div>
+              {editingItem.kind === 'pieza' && editingItem.data.tipo === 'carrusel' && editingItem.data.carousel_paths?.length > 0 && (
+                <div style={{ fontSize: 9, color: T.dim, textAlign: 'center', marginTop: -6, marginBottom: 10 }}>
+                  Carrusel de {1 + editingItem.data.carousel_paths.length} fotos — se muestra solo la primera acá.
+                </div>
+              )}
               <div style={{ fontSize: 11.5, color: T.text, textAlign: 'center', marginBottom: 10, lineHeight: 1.4 }}>
                 {editingItem.kind === 'video' ? editingItem.data.titulo
                   : editingItem.kind === 'task' ? editingItem.data.title
@@ -1174,45 +1242,6 @@ export function ModCalendario({ client, notify }) {
               })}
               {!loading && !trips.length && (
                 <div style={{ fontSize: 11, color: T.dim }}>Sin viajes cargados todavía.</div>
-              )}
-            </div>
-          </Card>
-
-          <Card>
-            <SLabel>Banco sin programar</SLabel>
-            <div style={{ fontSize: 9, color: T.dim, marginBottom: 8, marginTop: -6 }}>Arrastrá una foto directo al calendario, o elegí fecha y hora acá.</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
-              {banco.map(p => {
-                const meta = TIPO_META[p.tipo]
-                return (
-                  <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', background: T.surf2, borderRadius: RADIUS.sm - 4, padding: 6 }}>
-                    <ItemThumb
-                      item={{ kind: 'pieza', data: p }} thumbs={thumbs} size={52}
-                      onDragStart={startDrag('pieza', p)} onDragEnd={endDrag}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 10, color: meta.color, display: 'flex', alignItems: 'center', gap: 3 }}><meta.icon size={11} /> {meta.label}</div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <input
-                          type="date"
-                          value={scheduleDates[p.id] || ''}
-                          onChange={e => setScheduleDates(s => ({ ...s, [p.id]: e.target.value }))}
-                          style={{ flex: 1, minWidth: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 4px' }}
-                        />
-                        <input
-                          type="time"
-                          value={scheduleTimes[p.id] || '10:00'}
-                          onChange={e => setScheduleTimes(s => ({ ...s, [p.id]: e.target.value }))}
-                          style={{ width: 62, flexShrink: 0, fontSize: 10, background: T.surf, border: `1px solid ${T.border2}`, borderRadius: 4, color: T.text, padding: '3px 2px' }}
-                        />
-                      </div>
-                    </div>
-                    <Btn size="sm" onClick={() => handleProgramarPieza(p)}>OK</Btn>
-                  </div>
-                )
-              })}
-              {!loading && !banco.length && (
-                <div style={{ fontSize: 11, color: T.dim }}>Nada pendiente — todo lo del banco ya está programado.</div>
               )}
             </div>
           </Card>
